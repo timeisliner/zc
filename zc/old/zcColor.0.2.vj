@@ -1,0 +1,146 @@
+/*
+zcColor.0.2.vj 2018-5-3 4:58:51
+
+0. 修改
+  zcDebug 版本 0.1 为 0.2
+  zcUtils 版本 0.1 为 0.2
+
+1. 重命名
+  COLOR_MIN     为 zcCOLOR_MIN
+  COLOR_MAX     为 zcCOLOR_MAX
+  COLOR_UNKNOWN 为 zcCOLOR_UNKNOWN
+  COLOR_PREFIX  为 zcCOLOR_PREFIX
+  COLOR_POSTFIX 为 zcCOLOR_POSTFIX
+
+2. 修改 public struct cus 为 struct zcColorUs
+
+3. 修改 public struct color 为 struct zcColors
+
+
+
+lib
+zcUtils.0.2.vj
+
+lib optional
+zcDebug.0.2.vj
+
+*/
+
+/*
+text color format
+|cffrdgnbl[TEXT]|r
+
+|c alpha red green blue TEXT |r
+*/
+
+library zcColor initializer init requires zcUtils, optional zcDebug
+
+globals
+  public constant integer zcCOLOR_MIN = 0
+  public constant integer zcCOLOR_MAX = 255
+  
+  //public constant integer COLOR_ALPHA = zcCOLOR_MAX
+  //public constant integer COLOR_TRANSPARENCY = zcCOLOR_MAX // 不透明
+  
+  public constant string zcCOLOR_UNKNOWN = "ff"
+  public constant string zcCOLOR_PREFIX = "|c"
+  public constant string zcCOLOR_POSTFIX = "|r"
+endglobals
+
+struct zcColorUs // color utils 
+  // 转换 整数 为 颜色码 字符串 2位十六进制
+  public static method i2c takes integer num returns string cs
+    local string cs = ""
+    
+    if (num > zcCOLOR_MAX) then
+      set num = zcCOLOR_MAX
+    elseif (num < zcCOLOR_MIN) then
+      set num = zcCOLOR_MIN
+    endif
+    
+    if (num < zcUs_I2H_LIMIT) then // 补齐2位
+      set cs = zcUsInt.i2h(zcCOLOR_MIN)
+    endif
+    
+    set cs = cs + zcUsInt.i2h(num)
+    return cs
+  endmethod
+endstruct
+
+struct zcColors
+  private integer r = zcCOLOR_MIN
+  private integer g = zcCOLOR_MIN
+  private integer b = zcCOLOR_MIN
+  
+  public method operator value takes nothing returns string
+    return zcColorUs.i2c(this.r) + zcColorUs.i2c(this.g) + zcColorUs.i2c(this.b)
+  endmethod
+  
+  public method format takes string text returns string
+    return zcCOLOR_PREFIX + zcCOLOR_UNKNOWN + this.value + text + zcCOLOR_POSTFIX
+  endmethod
+    
+//! textmacro RGB takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    if ($ARG$ > zcCOLOR_MAX) then
+      set $ARG$ = zcCOLOR_MAX
+    elseif ($ARG$ < zcCOLOR_MIN) then
+      set $ARG$ = zcCOLOR_MIN
+    endif
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro RGB("red", "r", "r")
+//! runtextmacro RGB("green", "g", "g")
+//! runtextmacro RGB("blue", "b", "b")
+
+  public static method create takes integer r, integer g, integer b returns thistype
+    local thistype c = thistype.allocate()
+    
+    set c.red = r
+    set c.green = g
+    set c.blue = b
+    
+    return c
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+static if LIBRARY_zcDebug then
+  local zcColors c = zcColors.create(1,2,3)
+  local zcColors red = zcColors.create(255,0,0)
+  local zcColors green = zcColors.create(0,255,0)
+  local zcColors blue = zcColors.create(0,0,255)
+  local zcColors c1 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  local zcColors c2 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  local zcColors c3 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  
+  set c.red= 22
+  set c.green = 44
+  
+  call zcDebugs.output(red.format(red.value))
+  call zcDebugs.output(green.format(green.value))
+  call zcDebugs.output(blue.format(blue.value))
+  call zcDebugs.output(c.format("hazy	微茫的 c") + c.value)
+  call zcDebugs.output(c1.format("hazy	微茫的 c1") + c1.value)
+  call zcDebugs.output(c2.format("hazy	微茫的 c2") + c2.value)
+  call zcDebugs.output(c3.format("hazy	微茫的 c3") + c3.value)
+  
+  call c.destroy()
+  call red.destroy()
+  call green.destroy()
+  call blue.destroy()
+  call c1.destroy()
+  call c2.destroy()
+  call c3.destroy()
+  
+  call zcDebugs.output( "|cff" + zcUsInt.i2h(176) + zcUsInt.i2h(224) + zcUsInt.i2h(230) + "|r" )
+  call zcDebugs.output( "|c00" + zcUsInt.i2h(255) + zcColorUs.i2c(0) + zcColorUs.i2c(0) + "hazy	微茫的	B0 E0 E6|r" )
+endif
+endfunction
+
+endlibrary

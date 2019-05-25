@@ -1,0 +1,67 @@
+/*
+zcPoint.0.3.vj 2018-5-3 19:02:01
+
+1. 将测试部分分离到 test\testZC.vj
+
+*/
+
+/*
+test
+  testZC.vj
+*/
+
+library zcPoint initializer init
+
+globals
+  constant integer zcPIONT_D_VALUE = 0
+endglobals
+
+struct zcPoints 
+  private integer px = zcPIONT_D_VALUE
+  private integer py = zcPIONT_D_VALUE
+  private integer pz = zcPIONT_D_VALUE
+  
+
+//! textmacro XYZ takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro XYZ("x", "x", "px")
+//! runtextmacro XYZ("y", "y", "py")
+//! runtextmacro XYZ("z", "z", "pz")
+  
+  public method operator loc takes nothing returns location
+    return Location(this.px, this.py)
+  endmethod
+
+  public static method create takes integer x, integer y, integer z returns thistype
+    local thistype p = thistype.allocate()
+    
+    set p.x = x
+    set p.y = y
+    set p.z = z
+    
+    return p
+  endmethod      
+
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    debug call zcDebugs.output("zcPoints ... destroyed!")
+  endmethod
+
+
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+endlibrary
+
+

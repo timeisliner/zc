@@ -1,0 +1,76 @@
+/*
+zcPoint.0.2.vj 2018-5-3 5:52:28
+
+0. 修改 zcDebug 版本 0.1 为 0.2
+1. 修改 public constant integer DEFAULT_ORIENTATION 为 constant integer zcPIONT_D_VALUE
+2. 修改 public struct point 为 struct zcPoints
+*/
+
+/*
+lib
+
+lib optional
+zcDebug.0.2.vj
+
+*/
+
+library zcPoint initializer init requires optional zcDebug
+
+globals
+  constant integer zcPIONT_D_VALUE = 0
+endglobals
+
+struct zcPoints 
+  private integer px = zcPIONT_D_VALUE
+  private integer py = zcPIONT_D_VALUE
+  private integer pz = zcPIONT_D_VALUE
+  
+
+//! textmacro XYZ takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro XYZ("x", "x", "px")
+//! runtextmacro XYZ("y", "y", "py")
+//! runtextmacro XYZ("z", "z", "pz")
+  
+  public method operator loc takes nothing returns location
+    return Location(this.px, this.py)
+  endmethod
+
+  public static method create takes integer x, integer y, integer z returns thistype
+    local thistype p = thistype.allocate()
+    
+    set p.x = x
+    set p.y = y
+    set p.z = z
+    
+    return p
+  endmethod      
+      
+endstruct
+
+private function init takes nothing returns nothing
+  static if LIBRARY_zcDebug then
+    local zcPoints p = zcPoints.create(1, 2, 3)
+    local location lp = p.loc
+    
+    call zcDebugs.output("X : " + R2S(GetLocationX(lp)))
+    call zcDebugs.output("Y : " + R2S(GetLocationY(lp)))
+    call zcDebugs.output("Z : " + R2S(GetLocationZ(lp)))
+    
+    
+    call SetCameraQuickPosition(GetLocationX(lp), GetLocationY(lp))
+    call RemoveLocation(lp)
+    call p.destroy()
+  endif
+endfunction
+
+endlibrary
+
+

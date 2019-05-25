@@ -1,0 +1,119 @@
+/*
+zcUtils.0.3.2.vj 2018-5-8 16:22:59
+
+1. 新增结构  zcUsTimes
+  zcUsTimes 拥有 两个方法 将 整数 或者 浮点数 转换成 00:00 格式时间 分钟:秒钟
+  i2t4ms(integer)string   整数转换成 字符串 分钟:秒钟
+  r2t4ms(real)string      浮点数转换成 字符串 分钟:秒钟
+  
+2. 因为 结构中的方法默认为 public 所以去除i2h的 public 关键字
+  修改 public static method i2h takes integer num returns string
+  为 static method i2h takes integer num returns string
+*/
+
+/*
+test
+
+*/
+
+
+library zcUtils initializer init
+
+globals
+  constant integer zcUs_I2H_LIMIT = 16
+  
+  private string array I2Hs[zcUs_I2H_LIMIT]
+endglobals
+
+  // 时间工具
+struct zcUsTimes
+  // 整数转换成 字符串 分钟:秒钟
+  static method i2t4ms takes integer itime returns string
+    local string ts = ""
+    local integer min = itime / 60
+    local integer sec = itime - min * 60
+    
+    if min < 10 then
+      set ts = "0" + I2S(min)
+    else
+      set ts = I2S(min)
+    endif
+    
+    if sec < 10 then
+      return ts + ":" + "0" + I2S(sec)
+    else
+      return ts + ":" + I2S(sec)
+    endif
+  endmethod
+  // 浮点数转换成 字符串 分钟:秒钟
+  static method r2t4ms takes real rtime returns string
+    return i2t4ms(R2I(rtime))
+  endmethod
+endstruct
+
+  // 整数工具
+struct zcUsInt
+  // 转换 整数 为 十六进制 字符串
+  static method i2h takes integer num returns string
+    local integer curr = 0
+    local integer next = 0
+    
+    local string hexs = ""
+    local boolean end = false
+    
+    loop
+      set next = num / zcUs_I2H_LIMIT
+      if (next > 0) then
+        set curr = num - next * zcUs_I2H_LIMIT
+        set hexs = I2Hs[curr] + hexs
+        set num = next
+      else
+        set hexs = I2Hs[num] + hexs
+        set end = true
+      endif
+      exitwhen end
+    endloop
+    
+    return hexs
+  endmethod
+  
+endstruct
+
+globals
+  private boolean initialized = false
+  private boolean I2Hs_ready = false
+endglobals
+
+
+private function init takes nothing returns nothing
+  if ( initialized) then
+    return
+  else
+    set initialized = true
+  endif
+
+  if ( not I2Hs_ready) then
+    set I2Hs[0] = "0"
+    set I2Hs[1] = "1"
+    set I2Hs[2] = "2"
+    set I2Hs[3] = "3"
+    set I2Hs[4] = "4"
+    set I2Hs[5] = "5"
+    set I2Hs[6] = "6"
+    set I2Hs[7] = "7"
+    set I2Hs[8] = "8"
+    set I2Hs[9] = "9"
+    set I2Hs[10] = "A"
+    set I2Hs[11] = "B"
+    set I2Hs[12] = "C"
+    set I2Hs[13] = "D"
+    set I2Hs[14] = "E"
+    set I2Hs[15] = "F"
+    
+    set I2Hs_ready = true
+  endif
+
+endfunction
+
+endlibrary
+

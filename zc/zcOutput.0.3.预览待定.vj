@@ -1,0 +1,129 @@
+/* 
+zcOutput.0.3.vj 2018-5-11 11:22:00
+
+0. zcUtils 版本 0.3 >> 0.3.3
+1.
+
+2018-5-9 20:47:14 预览
+1. 惯例 
+    大幅修改变量、方法等命名方式
+      参数 前缀 a
+      文本宏 ED or DSG
+      前缀方法 is on off
+      泛用性功能方法 on off run
+
+2. 新功能
+  颜色模块 - 装配颜色库
+  前缀模式 - 消息自动附加前缀模式
+    可以自行开启和关闭前缀模式
+
+
+1. 修改 全局常量名 zcCOLOR_MIN >> zcColor_Min
+  修改 全局常量名 zcCOLOR_MAX >> zcColor_Max
+  修改 全局常量名 zcCOLOR_UNKNOWN >> zcColor_Alpha
+  修改 全局常量名 zcCOLOR_PREFIX >> zcColor_Prefix
+  修改 全局常量名 zcCOLOR_POSTFIX >> zcColor_Postfix
+
+2. 删除 结构 zcColorUs
+  删除的功能 已经转移到 zcUtils.0.3.3.vj 中的 结构 zcUtilsColors
+
+3. 增加 成员 alpha
+  使用 DSG 设置 成员 alpha red green blue
+*/
+
+/*
+lib
+zcPoint.0.3.vj
+
+*/
+
+/*
+test
+
+*/
+
+/*
+说明
+*/
+
+
+library zcOutput initializer init requires zcPoint
+
+globals
+  constant real zcOUT_D_DURATION = 15.
+  constant real zcOUT_MAX_DURATION = 7200.
+  
+endglobals
+
+struct zcOutputs
+  private zcPoints loc // 地点
+  private real dur = zcOUT_D_DURATION // 持续时间
+  private string msg = "" // 消息
+  private player ply = GetLocalPlayer() // 玩家
+  
+
+  
+//! textmacro TM_zcOutputs_GET takes ATTR, MBR, TYPE
+  public method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_GET("message", "msg", "string")
+//! runtextmacro TM_zcOutputs_GET("duration", "dur", "real")
+//! runtextmacro TM_zcOutputs_GET("point", "loc", "zcPoints")
+//! runtextmacro TM_zcOutputs_GET("user", "ply", "player")
+
+//! textmacro TM_zcOutputs_SET takes ATTR, ARG, MBR, TYPE
+  public method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_SET("message", "amsg", "msg", "string")
+//! runtextmacro TM_zcOutputs_SET("point", "apoint", "loc", "zcPoints")
+//! runtextmacro TM_zcOutputs_SET("user", "auser", "ply", "player")
+
+  public method setlocation takes integer x, integer y, integer z returns nothing
+    set loc.x = x
+    set loc.y = y
+    set loc.z = z
+  endmethod
+
+  public method operator duration= takes real adur returns nothing
+    if (adur < zcOUT_MAX_DURATION and adur >= 0) then
+      set this.dur = adur
+    endif
+  endmethod
+  
+  public method display takes nothing returns nothing
+    call DisplayTimedTextToPlayer(this.user, I2R(this.point.x), I2R(this.point.y), this.duration, this.message)
+  endmethod
+  
+  public method show takes string message returns nothing
+    set this.message = message
+    call this.display()
+  endmethod
+  
+  public static method create takes string message returns thistype
+    local thistype out = thistype.allocate()
+    set out.point = zcPoints.create(0, 0, 0)
+    set out.message = message
+
+    return out
+  endmethod
+  
+  method onDestroy takes nothing returns nothing
+    if (this.point != 0) then
+        call point.destroy()
+    endif
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+
+endlibrary
+

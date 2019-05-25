@@ -1,0 +1,38 @@
+/* 
+testZCOutput.vj 2018-5-3 19:34:21
+
+test lib
+zcOutput.0.1.vj 2018-5-3 4:27:29
+
+
+*/
+
+scope testZCOutput initializer init
+
+globals
+  private boolean tested = false
+endglobals
+
+  // lib zcOutput
+private function zcOutput takes nothing returns nothing
+  static if LIBRARY_zcOutput then
+    local zcOutputs output = zcOutputs.create("zcOutputs test...")
+    call output.display()
+  endif
+endfunction
+
+private function init takes nothing returns nothing
+  // Test
+  if tested then
+    return
+  else
+    set tested = true
+  endif
+  
+  // lib zcOutput
+  call zcOutput()
+
+endfunction
+
+
+endscope

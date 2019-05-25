@@ -1,0 +1,50 @@
+/*
+zcDebug.0.1.vj 2018-5-1 0:38:00 
+
+
+lib
+
+lib optional
+zcColor.0.1.vj
+
+
+note 2018-5-1 9:16:18
+  output
+    module - 添加模块名称
+*/
+// library zcDebug initializer init requires optional zcColor
+// If library A requires library B and library B requires library A , there's a cycle and JassHelper will popup a syntax error.
+library zcDebug initializer init 
+
+globals
+  private constant boolean DEBUG_COLOR_RED = true
+  private constant string DEBUG_TITLE = "[测试] "
+  private constant string DEBUG_TITLE_FORMATTED = "|cffff0000[测试]|r "
+endglobals
+
+public struct output
+
+  // 输出信息
+  public static method msg takes string text returns nothing
+    static if LIBRARY_zcColor then
+      local zcColor_color c = zcColor_color.create(255, 0, 0)
+      if (c != 0 and c.value != "") then
+        call BJDebugMsg(c.format(DEBUG_TITLE) + text)
+      else
+        call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+      endif
+      call c.destroy()
+    else
+      call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+    endif
+    
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+  call output.msg("唐立新!")
+endfunction
+
+
+endlibrary
+

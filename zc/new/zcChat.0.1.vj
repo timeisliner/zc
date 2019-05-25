@@ -1,0 +1,137 @@
+/* 
+zcChat.0.1.vj 2018-5-7 18:23:28
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+zcTrigger.0.1.vj 2018-5-7 19:03:14
+zcPlayer.0.1.vj 2018-5-7 10:10:46
+
+
+lib optional
+
+
+*/
+
+/*
+test
+  testzcChat.0.1.vj 2018-5-8 13:44:28
+
+*/
+
+/*
+集合common.j 中较为常用且与 chat 相关的api
+*/
+
+library zcChat initializer init requires zcTrigger, zcPlayer
+globals
+  private constant string ENTRY = "-"         // 匹配 进入点
+  private constant string EX_ENTRY = "--"     // 匹配 进入点 扩展
+  
+endglobals
+
+struct zcChats
+  private boolean r = false    // run 是否执行过 事件注册 事件动作添加 true 是 false 否
+  private boolean o = false    // on 聊天检测 是否已经开启 true 开启 false 关闭
+
+  private event e = null        // g - 存储 注册的聊天事件
+  private zcTriggers zct = 0    // g - 存储 聊天事件的触发器
+  private player p = null       // g - 存储 聊天事件的输入玩家
+  private string mct = ""       // g - 存储 聊天事件的触发文本
+  private boolean ext = false   // sg - 是否 精确匹配 否
+  
+  private string lmct = null    // sg - last chat text 最后 的 触发文本
+  private string lemct = null   // sg - last matched chat text 最后 的 精确匹配 的 触发文本
+  
+//! textmacro TM_zcChats_GET takes ATTR, MBR, TYPE
+  public method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcChats_GET("evt", "e", "event")
+//! runtextmacro TM_zcChats_GET("trg", "zct", "zcTriggers")
+//! runtextmacro TM_zcChats_GET("ply", "p", "player")
+//! runtextmacro TM_zcChats_GET("mctext", "mct", "string")
+//! runtextmacro TM_zcChats_GET("exact", "ext", "boolean")
+
+//! runtextmacro TM_zcChats_GET("lmctext", "lmct", "string")
+//! runtextmacro TM_zcChats_GET("lemctext", "lemct", "string")
+
+//! textmacro TM_zcChats_SET takes ATTR, ARG, MBR, TYPE
+  public method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcChats_SET("exact", "aext", "ext", "boolean")
+//! runtextmacro TM_zcChats_SET("lmctext", "almctext", "lmct", "string")
+//! runtextmacro TM_zcChats_SET("lemctext", "alemctext", "lemct", "string")
+  
+  
+  // 启用 禁用 聊天事件
+//! textmacro TM_zcChats_OO takes STATUS, IS, VALUE
+  method $STATUS$ takes nothing returns nothing
+    debug call BJDebugMsg("zcChats .. $STATUS$")
+    if r and $IS$ then
+      set this.o = $VALUE$
+      call this.zct.$STATUS$()
+    endif
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcChats_OO("on", "not o", "true")      // 启用
+//! runtextmacro TM_zcChats_OO("off", "o", "false")        // 禁用
+
+  
+  method run takes string amatch, code action returns nothing
+    if r then 
+      return
+    endif
+    
+    set this.r = true
+    set this.o = true
+    set this.mct = amatch
+    set this.e = TriggerRegisterPlayerChatEvent(this.zct.trg, this.p, this.mct, this.ext)
+    call TriggerAddAction(this.zct.trg, action)
+  endmethod
+  
+  // constructor
+  static method create takes zcTriggers azctrg, player aply returns thistype
+    local thistype self = thistype.allocate()
+    
+    set self.zct = azctrg
+    set self.p = aply
+    
+    return self
+  endmethod
+  
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    call this.zct.destroy()
+    set this.e = null
+    set this.zct = 0
+    set this.p = null
+    set this.mct = null
+    set this.ext = false
+    set this.lmct = null
+    set this.lemct = null
+    set this.r = false
+    set this.o = false
+    debug call zcDebugs.output("zcChats .. destroyed!")
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // ...
+endfunction
+
+
+endlibrary
+

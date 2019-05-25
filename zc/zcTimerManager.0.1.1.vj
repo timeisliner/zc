@@ -1,0 +1,384 @@
+/*
+zcTimerManager.0.1.1.vj 2018-5-11 14:09:32
+
+lib
+
+
+lib optional
+
+*/
+
+/*
+test
+  testzcTimerManager.0.1.vj 2018-5-11 7:19:05
+
+*/
+
+
+library zcTimerManager initializer init
+
+globals
+  private constant integer INVALID = -1 // zcTMTimers索引位置 无效的 == zcTMTimers.itmt
+
+  private constant real SPEED = 1       // 计时器窗口默认速率
+  
+  private constant integer TIMER_SIZE = 0x800  // 2048
+  private constant integer DIALOG_SIZE = 0x20  // 32
+  private constant integer TIMER_RECYCLE_LIMIT = 0x100  // 256 = TimerCount - TimerVernier 的限制数目 255
+  
+  private timer array Timers[TIMER_SIZE]
+  private timerdialog array Dialogs[DIALOG_SIZE]
+  
+  
+  private integer array TimerVernierCache[TIMER_SIZE]
+  private integer array DialogVernierCache[DIALOG_SIZE]
+  
+  private integer TimerCount = 0
+  private integer DialogCount = 0
+  
+  private integer TimerVernier = INVALID
+  private integer DialogVernier = INVALID
+  
+endglobals
+
+private function decTimer takes integer aitmt returns nothing
+  // 缓存 aitmt 处 计时器
+  // 游标前移 原运行中计时器末尾 指向 现运行中计时器末尾
+  // 清除 aitmt 处缓存的数据
+  local timer ttp = Timers[aitmt]
+  set TimerVernier = TimerVernier - 1 
+  set TimerVernierCache[aitmt] = 0
+  
+  if TimerVernier + 1 != aitmt then
+    // 原运行中计时器末尾 不等于(小于) aitmt 处
+    // 将 原运行中计时器末尾 和 aitmt 处 调换
+    // 将 原运行中计时器末尾处缓存的数据 放到 aitmt 处缓存
+    // 清除 原运行中计时器末尾处缓存的数据
+    set Timers[aitmt] = Timers[TimerVernier + 1]
+    set Timers[TimerVernier + 1] = ttp
+    set TimerVernierCache[aitmt] = TimerVernierCache[TimerVernier + 1]
+    set TimerVernierCache[TimerVernier + 1] = 0
+  endif
+  
+  if TimerCount - TimerVernier + 1 == TIMER_RECYCLE_LIMIT then
+    // 超过 回收限制数量
+    // 销毁这个不能回收的计时器
+    // 前移 原可用计时器末尾 >> 现可用计时器末尾
+    // 将 原可用计时器末尾 调换到 原运行中计时器末尾
+    // 清空 原可用计时器末尾
+    if ttp != null then
+      call DestroyTimer(ttp)
+    endif
+    set TimerCount = TimerCount -1
+    set Timers[TimerVernier + 1] = Timers[TimerCount]
+    set Timers[TimerCount] = null
+  endif
+
+endfunction
+private function incTimer takes nothing returns integer
+  if TimerCount + 1 == TIMER_SIZE then  // 如果超过最大计时器数量
+    return INVALID
+  endif
+
+  set TimerVernier = TimerVernier + 1 // 游标后移 以便于指向最后创建的计时器的索引
+  if TimerVernier == TimerCount then  // 如果没有可用的计时器
+    set TimerCount = TimerCount + 1 // 计时器 可用的总数数量 加1
+    set Timers[TimerVernier] = CreateTimer()  // 创建一个计时器
+  endif
+  
+  return TimerVernier
+endfunction
+
+
+struct zcTMTimers
+  private integer itmt = INVALID
+  method operator id takes nothing returns integer
+    return this.itmt
+  endmethod
+
+  private boolean onf = false
+//! textmacro TM_zcTMTimers_ED takes METHOD, IS, API, VALUE
+  method $METHOD$ takes nothing returns nothing
+    if $IS$ then
+      call $API$(Timers[this.itmt])
+      set this.onf = $VALUE$
+    endif
+  endmethod
+//! endtextmacro
+//! runtextmacro TM_zcTMTimers_ED("on", "not this.onf", "ResumeTimer", "true")
+//! runtextmacro TM_zcTMTimers_ED("off", "this.onf", "PauseTimer", "false")
+
+//! textmacro TM_zcTMTimers_IS takes METHOD, EXP
+  method $METHOD$ takes nothing returns boolean
+    return $EXP$
+  endmethod 
+//! endtextmacro
+//! runtextmacro TM_zcTMTimers_IS("isOn", "this.onf")
+//! runtextmacro TM_zcTMTimers_IS("isValid", "this.itmt != INVALID")
+
+//! textmacro TM_zcTMTimers_OP takes METHOD, API
+  method operator $METHOD$ takes nothing returns real
+    return $API$(Timers[this.itmt])
+  endmethod 
+//! endtextmacro
+//! runtextmacro TM_zcTMTimers_OP("elapsed", "TimerGetElapsed")
+//! runtextmacro TM_zcTMTimers_OP("remaining", "TimerGetRemaining")
+//! runtextmacro TM_zcTMTimers_OP("timeout", "TimerGetTimeout")
+  
+  method start takes real atimeout, boolean aperiodic, code ahandlerFunc returns nothing
+    call TimerStart(Timers[this.itmt], atimeout, aperiodic, ahandlerFunc)
+    set this.onf = true
+  endmethod
+
+  static method create takes nothing returns thistype
+    local thistype tt = thistype.allocate()
+    if tt == 0 then
+      return 0
+    endif
+    
+    // 获取计时器，并记录位置
+    set tt.itmt = incTimer() 
+    if tt.itmt == INVALID then
+    // 记录无效
+      call tt.destroy()
+      return 0
+    endif
+    // 绑定 计时器 和 数据
+    set TimerVernierCache[tt.itmt] = tt
+    return tt
+  endmethod
+
+  // Removes all data from a zcTMTimers instance and recycles its index.
+  // call zcTMTimers.destroy()
+  method destroy takes nothing returns nothing
+    if this == 0 or tt.itmt == INVALID then
+      // 回收编号
+      call this.deallocate()
+      debug call zcDebugs.output("zcPoints ... destroyed!")
+      return
+    endif
+    
+    call this.off() // 关闭计时器
+    call decTimer(this.itmt) // 对该计时器进行回收操作
+    
+    // 销毁数据
+    set this.itmt = INVALID
+    set this.onf = false
+    // 回收编号
+    call this.deallocate()
+    debug call zcDebugs.output("zcPoints ... destroyed!")
+  endmethod
+endstruct
+
+
+private function decDialog takes integer aitmd, zcTMTimers atmt returns nothing
+  // 销毁 对话框 和 计时器
+  if Dialogs[aitmd] != null then
+    call DestroyTimerDialog(Dialogs[aitmd])
+  endif
+  call atmt.destroy()
+  
+  if DialogVernier != aitmd then
+    // 调换位置
+    set Dialogs[aitmd] = Dialogs[DialogVernier]
+    set DialogVernierCache[aitmd] = DialogVernierCache[DialogVernier]
+  endif
+  // 清除数据
+  set Dialogs[DialogVernier] = null
+  set DialogVernierCache[DialogVernier] = 0
+  // 前移 游标
+  set DialogVernier = DialogVernier - 1
+  // 总数 -1
+  set DialogCount = DialogCount - 1
+endfunction
+private function incDialog takes integer aitmt returns integer
+  if DialogCount + 1 == DIALOG_SIZE then
+    // 如果超过最大对话框数量
+    return INVALID
+  endif
+  // 后移 游标
+  set DialogVernier = DialogVernier + 1
+  // 总数 +1
+  set DialogCount = DialogCount + 1 
+  // 创建一个对话框
+  set Dialogs[DialogVernier] = CreateTimerDialog(Timers[aitmt])
+  
+  return DialogVernier
+endfunction
+
+struct zcTMDialogs
+  private zcTMTimers tmt = 0
+  private integer itmd = INVALID
+  private 
+  method operator id takes nothing returns integer
+    return this.itmd
+  endmethod
+
+//! textmacro TM_zcTMDialogs_DSG takes METHOD, ARG, TYPE, VALUE, MEMBER, API
+  private $TYPE$ $MEMBER$ = $VALUE$             
+  method operator $METHOD$ takes nothing returns $TYPE$
+    return this.$MEMBER$
+  endmethod
+  method operator $METHOD$= takes $TYPE$ $ARG$ returns nothing
+    call $API$
+    set this.$MEMBER$ = $ARG$
+  endmethod
+//! endtextmacro
+//! runtextmacro TM_zcTMDialogs_DSG("title", "atitle", "string", "null", "stitle", "TimerDialogSetTitle(Dialogs[this.itmd], atitle)")
+//! runtextmacro TM_zcTMDialogs_DSG("speed", "aspeed", "real", "SPEED", "rspeed", "TimerDialogSetSpeed(Dialogs[this.itmd], aspeed)")
+//! runtextmacro TM_zcTMDialogs_DSG("remain", "aremain", "real", "0", "rremain", "TimerDialogSetRealTimeRemaining(Dialogs[this.itmd], aremain)")
+
+//! textmacro TM_zcTMDialogs_ED takes METHOD, IS, API
+  method $METHOD$ takes nothing returns nothing
+    if $IS$ then
+      call $API$
+    endif
+  endmethod
+//! endtextmacro
+//! runtextmacro TM_zcTMDialogs_ED("on", "not this.tmt.isOn()", "this.tmt.on()")
+//! runtextmacro TM_zcTMDialogs_ED("off", "this.tmt.isOn()", "this.tmt.off()")
+
+//! textmacro TM_zcTMDialogs_SH takes METHOD, IS, VALUE
+  method $METHOD$ takes nothing returns nothing
+    if $IS$(Dialogs[this.itmd]) then
+      debug call zcDebugs.log("$METHOD$")
+      call TimerDialogDisplay(Dialogs[this.itmd], $VALUE$)
+    endif
+  endmethod
+//! endtextmacro
+//! runtextmacro TM_zcTMDialogs_SH("show", "not IsTimerDialogDisplayed", "true")
+//! runtextmacro TM_zcTMDialogs_SH("hide", "IsTimerDialogDisplayed", "false")
+
+//! textmacro TM_zcTMDialogs_IS takes METHOD, EXP
+  method $METHOD$ takes nothing returns boolean
+    return $EXP$
+  endmethod 
+//! endtextmacro
+//! runtextmacro TM_zcTMDialogs_IS("isOn", "this.tmt.isOn()")
+//! runtextmacro TM_zcTMDialogs_IS("isShow", "IsTimerDialogDisplayed(Dialogs[this.itmd])")
+  
+  // 测试用
+  method status takes nothing returns nothing
+    debug call zcDebugs.log("dialog id is " + I2S(GetHandleId(Dialogs[this.itmd])))
+    debug call zcDebugs.log("timer id is " + I2S(GetHandleId(Timers[this.tmt.id])))
+    debug call zcDebugs.log("timeout" + R2S(this.tmt.timeout) + " remaining" + R2S(this.tmt.remaining) + " elapsed" + R2S(this.tmt.elapsed))
+    if this.tmt.isOn() then
+      debug call zcDebugs.log("timer is on")
+    else
+      debug call zcDebugs.log("timer is off")
+    endif
+    if this.isOn() then
+      debug call zcDebugs.log("dialog is on")
+    else
+      debug call zcDebugs.log("dialog is off")
+    endif
+    if this.isShow() then
+      debug call zcDebugs.log("dialog is show")
+    else
+      debug call zcDebugs.log("dialog is hide")
+    endif
+  endmethod
+  
+  method run takes nothing returns nothing
+    //call TimerDialogSetTimeColor(Dialogs[this.itmd], 100, 100, 100, 100)
+    call this.tmt.start(100, false, null)
+    //call TimerStart(Timers[this.tmt.id], 100, false, null)
+    // call this.show()
+    // call this.on()
+    // call this.status()
+  endmethod
+
+  static method create takes nothing returns thistype
+    local thistype tt = thistype.allocate()
+    if tt == 0 then
+      return 0
+    endif
+    
+    set tt.tmt = zcTMTimers.create()
+    if tt.tmt == 0 then
+      call tt.destroy()
+      return 0
+    endif
+    
+    // 获取对话框，并记录位置
+    set tt.itmd = incDialog(tt.tmt.id) 
+    if tt.itmd == INVALID then
+    // 记录无效
+      call tt.tmt.destroy()
+      return 0
+    endif
+    
+    // 绑定 对话框 和 数据
+    set tt.title = "剩余时间"
+    set DialogVernierCache[tt.itmd] = tt
+    return tt
+  endmethod
+
+  method destroy takes nothing returns nothing
+    if this == 0 or this.tmt == 0 then
+      call this.deallocate()
+      return
+    endif
+    
+    call this.hide() // 隐藏对话框
+    call decDialog(this.itmd, this.tmt) // 对该计时器进行回收操作
+    
+    // 销毁数据
+    set this.itmd = INVALID
+    set this.tmt = 0
+    // 回收编号
+    call this.deallocate()
+  endmethod
+endstruct
+
+
+struct zcTimerManagers
+  static method timers takes nothing returns integer
+    return TimerCount
+  endmethod
+  static method timersinfo takes nothing returns nothing
+    local integer i = 0
+    
+    debug call zcDebugs.log("可用计时器：" + I2S(TimerCount))
+    if TimerCount == 0 then
+      return
+    endif
+    
+    loop
+      if i <= TimerVernier then
+        debug call zcDebugs.log("计时器编号：" + I2S(i) + " GetHandleId: " + I2S(GetHandleId(Timers[i])) + " 正在运行！")
+      else
+        debug call zcDebugs.log("计时器编号：" + I2S(i) + " GetHandleId: " + I2S(GetHandleId(Timers[i])) + " 缓存中!")
+      endif
+      set i = i + 1
+      exitwhen i == TimerCount
+    endloop
+    
+  endmethod
+  static method dialogs takes nothing returns integer
+    return DialogCount
+  endmethod
+  static method dialogsinfo takes nothing returns nothing
+    local integer i = 0
+    
+    debug call zcDebugs.log("可用计时器窗口：" + I2S(DialogCount))
+    if DialogCount == 0 then
+      return
+    endif
+    //
+    loop
+      debug call zcDebugs.log("计时器窗口编号：" + I2S(i) + " GetHandleId: " + I2S(GetHandleId(Dialogs[i])) + " 使用中！")
+      set i = i + 1
+      exitwhen i == DialogCount
+    endloop
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+
+endlibrary
+
+

@@ -1,0 +1,90 @@
+/* Zone Center | Zone Code
+zc.0.1.vj 2018-5-1 1:11:18
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+zcUtils.0.3.vj 2018-5-3 18:56:35
+
+lib optional
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+*/
+
+/*
+test
+  testZC.vj
+
+*/
+
+/*
+集合common.j 中较为常用且与 player 相关的api
+*/
+
+library zc initializer init requires libraryA optional libraryB
+
+globals
+  private constant string array I2Hs
+  public constant integer I_HEX_LIMIT = 16
+  
+endglobals
+
+struct ius
+  
+//! textmacro TM_zcOutputs_GET takes ATTR, MBR, TYPE
+  public method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_GET("message", "msg", "string")
+//! runtextmacro TM_zcOutputs_GET("duration", "dur", "real")
+
+//! textmacro TM_zcOutputs_SET takes ATTR, ARG, MBR, TYPE
+  public method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_SET("message", "amsg", "msg", "string")
+  
+  
+  // 转换 整数 为 十六进制 字符串
+  public static method i2h takes integer num returns string hexs
+    local integer curr = 0
+    local integer next = 0
+    
+    local string hexs = ""
+    local boolean end = false
+    
+    loop
+      set next = num / I_HEX_LIMIT
+      if (next > 0) then
+        set curr = num - next * I_HEX_LIMIT
+        set hexs = I2Hs[curr] + hexs
+        set num = next
+      else
+        set hexs = I2Hs[num] + hexs
+        set end = true
+      endif
+      exitwhen end
+    endloop
+    
+    return hexs
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+endfunction
+
+
+endlibrary
+

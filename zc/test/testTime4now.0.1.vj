@@ -1,0 +1,170 @@
+/* 
+testTime4now.0.1.vj 2018-5-4 18:14:41
+
+test 
+
+
+required lib
+zcTable.0.3.vj 2018-5-3 19:05:08
+zcOutput.0.2.vj 2018-5-4 20:49:19
+zcColor.0.3.vj 2018-5-3 18:58:31
+
+
+*/
+
+scope testTime4now initializer init
+
+globals
+  private constant key G_NULL               // 标识
+  private constant key G_MAP_TIME_EVENT     // 标识 event 地图初始化
+  private constant key G_MAIN               // 标识 主 触发器 相关
+  private constant key G_MAIN_COND          // 标识 主 触发器 触发判定条件
+  private constant key G_MAIN_TIME          // 标识 real 游戏时间
+  
+  private constant key G_MAIN_OUTPUT        // 标识 integer zcOutputs 消息输出 
+
+  private constant key G_MAIN_SYSTEM_COLOR      // 标识 integer zcColors 系统消息文本颜色 255 255 0
+  private constant key G_MAIN_NORMAL_COLOR      // 标识 integer zcColors 普通消息文本颜色 0 0 0
+  private constant key G_MAIN_REWARD_COLOR      // 标识 integer zcColors 奖励消息文本颜色 0 255 127
+  private constant key G_MAIN_WARNING_COLOR     // 标识 integer zcColors 警告消息文本颜色 255 0 0
+  private constant key G_MAIN_NOTICE_COLOR      // 标识 integer zcColors 警告消息文本颜色 0 0 255
+  private constant key G_MAIN_SHORTCUT_COLOR    // 标识 integer zcColors 警告消息文本颜色 255 204 0
+  
+  private zcTables GT = 0
+  
+  private boolean initialized = false
+endglobals
+
+private keyword init
+
+
+public function gettestTime4nowKey takes nothing returns zcTables
+  if not initialized then
+    call init.evaluate()
+  endif
+  return GT
+endfunction
+
+
+globals
+  private constant real G_MAIN_TIMEOUT = 1  // 每秒执行一次
+  private boolean G_MAIN_TIMER_PERIODIC = true // 循环
+
+  
+  private boolean G_MAIN_INIT = true // 全局 Timer 控制器是否需要初始化
+endglobals
+
+private function mainHandles takes nothing returns nothing
+
+endfunction
+
+private function times takes real rtime returns string
+  local string ts = ""
+  local integer itime = R2I(rtime)
+  local integer min = itime / 60
+  local integer sec = itime - min * 60
+  
+  if min < 10 then
+    set ts = "0" + I2S(min)
+  else
+    set ts = I2S(min)
+  endif
+
+  set ts = ts + ":"
+  
+  if sec < 10 then
+    set ts = ts + "0" + I2S(sec)
+  else
+    set ts = ts + I2S(sec)
+  endif
+  
+  return ts
+endfunction
+
+private function mainAction takes nothing returns nothing
+  local real timeout = GT.real[G_MAIN_TIME] + G_MAIN_TIMEOUT
+  local zcOutputs output = GT.integer[G_MAIN_OUTPUT]
+  local zcColors system = GT.integer[G_MAIN_SYSTEM_COLOR]
+  local zcColors normal = GT.integer[G_MAIN_NORMAL_COLOR]
+  local zcColors reward = GT.integer[G_MAIN_REWARD_COLOR]
+  local zcColors warning = GT.integer[G_MAIN_WARNING_COLOR]
+  local zcColors notice = GT.integer[G_MAIN_NOTICE_COLOR]
+  local zcColors shortcut = GT.integer[G_MAIN_SHORTCUT_COLOR]
+  
+  
+  set GT.real[G_MAIN_TIME] = timeout
+
+  
+
+  if G_MAIN_INIT then
+    
+    call output.show(system.format("[系统 " + times(timeout) + "] ") + system.format("G_MAIN_SYSTEM_COLOR!!"))
+    call output.show(normal.format("[系统 " + times(timeout) + "] ") + normal.format("G_MAIN_NORMAL_COLOR!!"))
+    call output.show(reward.format("[系统 " + times(timeout) + "] ") + reward.format("G_MAIN_REWARD_COLOR!!"))
+    call output.show(warning.format("[系统 " + times(timeout) + "] ") + warning.format("G_MAIN_WARNING_COLOR!!"))
+    call output.show(notice.format("[系统 " + times(timeout) + "] ") + notice.format("G_MAIN_NOTICE_COLOR!!"))
+    call output.show(shortcut.format("[系统 " + times(timeout) + "] ") + shortcut.format("G_MAIN_SHORTCUT_COLOR!!"))
+    //call output.show(system.format("[系统 " + times(timeout) + "] ") + normal.format("Wellcome to RedMoon!!"))
+    set G_MAIN_INIT = false
+  else
+  
+  
+  
+  endif
+  //call TimerStart(GT.timer[G_MAIN], G_MAIN_TIMEOUT, G_MAIN_PERIODIC, mainHandles)
+
+endfunction
+
+private function MainConditions takes nothing returns boolean
+  return G_MAIN_INIT
+endfunction
+
+private function oninit takes nothing returns nothing
+  
+
+  // 每秒 一次
+  set GT.event[G_MAP_TIME_EVENT] = TriggerRegisterTimerEvent(GT.trigger[G_MAIN], G_MAIN_TIMEOUT, G_MAIN_TIMER_PERIODIC)
+  set GT.triggeraction[G_MAIN] = TriggerAddAction(GT.trigger[G_MAIN], function mainAction)
+  
+
+endfunction
+
+private function loading takes nothing returns nothing
+
+endfunction
+
+private function init takes nothing returns nothing
+  // Test
+  if initialized then
+    return
+  endif
+  set initialized = true
+  
+  
+  
+  // pre init
+  set GT = zcTables.create()
+  set GT.real[G_MAIN_TIME] = 0
+  
+  set GT.integer[G_MAIN_SYSTEM_COLOR] = zcColors.create(255, 255, 0 )
+  set GT.integer[G_MAIN_NORMAL_COLOR] = zcColors.create(255, 255, 255 )
+  set GT.integer[G_MAIN_REWARD_COLOR] = zcColors.create(0, 255, 127 )
+  set GT.integer[G_MAIN_WARNING_COLOR] = zcColors.create(255, 0, 0 )
+  set GT.integer[G_MAIN_NOTICE_COLOR] = zcColors.create(0, 0, 255 )
+  set GT.integer[G_MAIN_SHORTCUT_COLOR] = zcColors.create(255, 204, 0 )
+  
+  set GT.integer[G_MAIN_OUTPUT] = zcOutputs.create("")
+  set GT.trigger[G_MAIN] = CreateTrigger()
+  
+  
+  
+  // loading
+  call loading()
+  
+  // oninit()
+  call oninit()
+
+endfunction
+
+
+endscope

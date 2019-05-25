@@ -1,0 +1,24 @@
+/*
+zcDebug.0.4.vj 2018-5-9 20:13:21
+
+1. 将 public static method output takes string text returns nothing 方法
+  修改为 static method log takes string astext returns nothing
+2. 删除 globals 中的 public constant boolean DEBUG_COLOR_RED = true
+3. 修改 public constant string DEBUG_TITLE_FORMATTED = "|cffff0000[测试]|r "
+  为 private constant string TITLE_FORMATTED = "|cffff0000[测试]|r "
+*/
+
+library zcDebug
+
+globals
+  private constant string TITLE_FORMATTED = "|cffff0000[测试]|r "
+endglobals
+
+struct zcDebugs
+  static method log takes string astext returns nothing
+    call BJDebugMsg(TITLE_FORMATTED + astext)
+  endmethod
+endstruct
+
+endlibrary
+

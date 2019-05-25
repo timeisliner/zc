@@ -1,0 +1,84 @@
+/*
+zc.0.2.min.vj 2018-5-8 10:35:24
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+zcUtils.0.3.vj 2018-5-3 18:56:35
+
+lib optional
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+*/
+
+/*
+test
+  testZC.vj
+
+*/
+
+/*
+整合 common.j 中较为常用且与 [关键字] 相关的 api
+包括提供一些便利的方法，这会加重程序运行负担，也能极大提高编程效率
+*/
+library zc initializer init requires libraryA optional libraryB
+
+globals
+  private constant string array I2Hs
+  public constant integer I_HEX_LIMIT = 16
+     
+endglobals
+
+struct sname
+  private integer member = 1
+
+  
+//! textmacro TM_sname_GET takes ATTR, MBR, TYPE
+  method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_sname_GET("message", "msg", "string")
+//! runtextmacro TM_sname_GET("duration", "dur", "real")
+
+//! textmacro TM_sname_SET takes ATTR, ARG, MBR, TYPE
+  method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_sname_SET("message", "amsg", "msg", "string")
+  
+  
+  // constructor
+  static method create takes integer a, real b, code c returns thistype
+    local thistype tt = thistype.allocate()
+  endmethod
+    
+  // destructor
+  method destroy takes nothing returns nothing
+    thistype.deallocate()
+  endmethod
+    
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+endfunction
+
+
+endlibrary
+

@@ -1,0 +1,78 @@
+// zc Trigger
+/*
+
+act action
+
+
+
+cdt condition
+
+function cdt takes nothing returns boolean
+  // trigger 触发目标相关
+    return ((GetSpellAbilityId() == 'A006'))
+endfunction
+
+*/
+
+library zcT initializer init
+globals
+  private constant  boolean sa = true
+  private constant boolean sb = false
+  private constant boolean sc = true
+endglobals
+  struct skill // declare struct
+    integer x // To declare a member you simply use <type> <name> [= initial value]
+    integer y
+  endstruct
+// skill action
+
+function init takes nothing returns nothing
+  call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 2, "Starting game...")
+  static if sa then
+    call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 2, "aaaaa true !")
+  endif
+  static if sb then
+    call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 2, "bbbbbb false !")
+    static if sc then
+      call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 2, "ccccccc true !")
+    endif
+  endif
+  
+  
+endfunction
+
+endlibrary
+
+act
+
+con
+
+function Trig_SReviveConditions takes nothing returns boolean
+    return ((GetSpellAbilityId() == 'A006'))
+endfunction
+
+function Trig_SReviveActions takes nothing returns nothing
+    call YDWESetLocalVariableLocation( "0", GetUnitLoc(GetSpellTargetUnit()) )
+    call YDWESetLocalVariableInteger( "1", GetPlayerId(GetOwningPlayer(GetSpellTargetUnit())) )
+    if (((udg_PHeroDeadUs[YDWEGetLocalVariableInteger("1")] != udg_GUnit) and (GetSpellTargetUnit() == udg_PHeroGraveUs[YDWEGetLocalVariableInteger("1")]))) then
+        call DisplayTextToForce( GetPlayersAll(), ( "|cff00FF7F[测试]|r 准备复活 " + GetUnitName(udg_PHeroDeadUs[YDWEGetLocalVariableInteger("1")]) ) )
+        call RemoveUnit( udg_PHeroGraveUs[YDWEGetLocalVariableInteger("1")] )
+        call DisplayTextToForce( GetPlayersAll(), ( "|cff00FF7F[测试]|r 已删除 " + GetUnitName(udg_PHeroGraveUs[YDWEGetLocalVariableInteger("1")]) ) )
+        call ReviveHeroLoc( udg_PHeroDeadUs[YDWEGetLocalVariableInteger("1")], YDWEGetLocalVariableLocation("0"), true )
+        set udg_PHeroDeadUs[YDWEGetLocalVariableInteger("1")] = udg_GUnit
+        set udg_PHeroGraveUs[YDWEGetLocalVariableInteger("1")] = udg_GUnit
+    else
+    endif
+endfunction
+
+//===========================================================================
+function InitTrig_SRevive takes nothing returns nothing
+    set gg_trg_SRevive = CreateTrigger()
+    call DisableTrigger(gg_trg_SRevive)
+#ifdef DEBUG
+    call YDWESaveTriggerName(gg_trg_SRevive, "SRevive")
+#endif
+    call TriggerRegisterUnitEvent( gg_trg_SRevive, gg_unit_Hamg_0011, EVENT_UNIT_DEATH )
+    call TriggerAddCondition(gg_trg_SRevive, Condition(function Trig_SReviveConditions))
+    call TriggerAddAction(gg_trg_SRevive, function Trig_SReviveActions)
+endfunction

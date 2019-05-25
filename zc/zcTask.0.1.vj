@@ -1,0 +1,186 @@
+/*
+zcTask.0.1.vj 2018-5-8 16:57:23
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+zcPoint.0.3.vj 2018-5-3 19:02:01
+
+lib optional
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+*/
+
+/*
+test
+  testzcTask.0.1.vj 2018-5-8 17:58:25
+*/
+
+/*
+刷怪任务
+
+zcTasks
+  private boolean onf = false // sg 任务状态 开启 关闭
+
+  Define Set Get
+    METHOD,     ARG,          TYPE,       VALUE,    MEMBER
+  ("id",        "aid",        "integer",  "0",      "i"  )  // sg 任务 标识，注意，录入时，需要按 s 从小到大录
+  ("start",     "astart",     "real",     "0",      "s"  )  // sg 任务 初始执行时间，乘数 60 >> s * 60
+  ("periodic",  "aperiodic",  "boolean",  "false",  "prd")  // sg 是否为 周期任务
+  ("time",      "atime",      "real",     "0",      "t"  )  // sg 记录最后一次执行时的系统时间
+  ("timeout",   "atimeout",   "real",     "0",      "to" )  // sg 刷怪间隔时间
+  ("message",   "amessage",   "string",   "null",   "msg")  // sg 消息提示
+  ("monster",   "amonster",   "integer",  "0",      "mst")  // sg 刷怪类型 编号
+  ("number",    "anumber",    "integer",  "0",      "num")  // sg 刷怪数量
+  ("point",     "apoint",     "zcPoints", "0",      "pt" )  // sg 刷怪地点
+  ("player",    "aplayer",    "player",   "null",   "ply")  // sg 怪物所属玩家
+
+  
+  constructor
+  static create(ai,  as, aprd, at, ato, amsg, amst, anum, apt, aply) thistype
+  
+  destructor
+  destroy()
+  onDestroy()
+
+  isOn()                      // 判断 任务状态 开启 关闭
+  on()                        // 开启 任务
+  off()                       // 关闭 任务
+  info()string                // 获得刷怪信息
+  runnable(real)boolean       // 判断任务是否开启 s * 60 <= real:当前系统时间 ? true 开启 : false 不开启
+  onTimed()real               // 周期任务 下一次触发时间
+  onTime(real)boolean         // 周期任务 判断任务是否到期 t + to <= real:当前系统时间 ? true 开启 : false 不开启
+  onWork(group, integer)      // 刷怪 将创建的单位添加到group 并记录数量 integer
+    如果任务状态为关闭 无效果
+    非周期任务prd=false 刷怪完了会自动关闭该任务
+  
+*/
+
+library zcTask initializer init
+struct zcTasks
+  private boolean onf = false
+
+  method isOn takes nothing returns boolean
+    return this.onf
+  endmethod
+  
+//! textmacro TM_zcTasks_ED takes STATUS, IS, VALUE
+  method $STATUS$ takes nothing returns nothing
+    if $IS$ then
+      set this.onf = $VALUE$
+    endif
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcTasks_ED("on", "not this.onf", "true")
+//! runtextmacro TM_zcTasks_ED("off", "this.onf", "false")
+
+
+
+// Define Set Get
+//! textmacro TM_zcTasks_DSG takes METHOD, ARG, TYPE, VALUE, MEMBER
+  private $TYPE$ $MEMBER$ = $VALUE$             
+
+  method operator $METHOD$ takes nothing returns $TYPE$
+    return this.$MEMBER$
+  endmethod
+  
+  method operator $METHOD$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MEMBER$ = $ARG$
+  endmethod
+  
+//! endtextmacro
+
+//! runtextmacro TM_zcTasks_DSG("id", "aid", "integer", "0", "i")
+//! runtextmacro TM_zcTasks_DSG("start", "astart", "real", "0", "s")
+//! runtextmacro TM_zcTasks_DSG("periodic", "aperiodic", "boolean", "false", "prd")
+//! runtextmacro TM_zcTasks_DSG("time", "atime", "real", "0", "t")
+//! runtextmacro TM_zcTasks_DSG("timeout", "atimeout", "real", "0", "to")
+//! runtextmacro TM_zcTasks_DSG("message", "amessage", "string", "null", "msg")
+//! runtextmacro TM_zcTasks_DSG("monster", "amonster", "integer", "0", "mst")
+//! runtextmacro TM_zcTasks_DSG("number", "anumber", "integer", "0", "num")
+//! runtextmacro TM_zcTasks_DSG("point", "apoint", "zcPoints", "0", "pt")
+//! runtextmacro TM_zcTasks_DSG("player", "aplayer", "player", "null", "ply")
+
+
+  static method create takes integer ai,  real as, boolean aprd, real at, real ato, string amsg, integer amst, integer anum, zcPoints apt, player aply returns thistype
+    local thistype tt = thistype.allocate()
+    set tt.i = ai
+    set tt.s = as
+    set tt.prd = aprd
+    set tt.t = at
+    set tt.to = ato
+    set tt.msg = amsg
+    set tt.mst = amst
+    set tt.num = anum
+    set tt.pt = apt
+    set tt.ply = aply
+    
+    return tt
+  endmethod
+
+
+  method info takes nothing returns string
+    return "在x:" + I2S(this.pt.x) + "和y:" + I2S(this.pt.y) + "给玩家" + I2S(GetPlayerId(this.ply) + 1) + "刷了" + I2S(this.num) + "个，下一次刷怪时间:" + R2S(this.t + this.to) + "秒"
+  endmethod
+  
+  method runnable takes real at returns boolean
+    return this.start * 60.0 <= at
+  endmethod
+  
+  method onTimed takes nothing returns real
+    return this.t + this.to
+  endmethod
+  
+  method onTime takes real at returns boolean
+    return this.t + this.to <= at
+  endmethod
+  
+  method onWork takes group ag, integer ac returns nothing
+    local integer n = 0
+    
+    if not this.isOn() then
+      return
+    endif
+    
+    loop
+      set n = n + 1
+      call GroupAddUnit(ag, CreateUnitAtLoc(this.ply, this.mst, this.pt.loc, 0))
+      exitwhen n >= this.num
+    endloop
+    set ac = ac + n
+    
+    if not this.prd then
+      call this.off()
+    endif
+    
+    set n = 0
+  endmethod
+  
+  // destructor
+  method destroy takes nothing returns nothing
+    call this.deallocate()
+  endmethod
+    
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    debug call zcDebugs.log("zcTasks ... destroyed!")
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+endfunction
+
+
+endlibrary
+
+

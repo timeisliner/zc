@@ -1,0 +1,77 @@
+/*
+zcTextTag.0.1.vj 2018-5-1 7:43:58
+
+lib
+zcColor.0.1.vj
+
+lib optional
+zcDebug.0.1.vj
+
+*/
+
+
+/**
+tag - Text
+
+type - texttag - 固定位置文本标签
+
+
+size to height
+  size * 0.023 / 10       [10 - 30]
+  
+  real speed, real angle
+  velocity = speed * 0.071 / 128
+  xvel = velocity * Cos(angle * bj_DEGTORAD)
+  yvel = velocity * Sin(angle * bj_DEGTORAD)
+*/
+
+function SetTextTagVelocityBJ takes texttag tt, real speed, real angle returns nothing
+    local real vel = TextTagSpeed2Velocity(speed)
+    local real xvel = vel * Cos(angle * bj_DEGTORAD)
+    local real yvel = vel * Sin(angle * bj_DEGTORAD)
+
+    call SetTextTagVelocity(tt, xvel, yvel)
+endfunction
+
+library zcText initializer init requires zcColor optional zcDebug
+
+globals
+  public constant real FONT_SIZE = 10  //
+  public constant string DEFAULT = ""  //
+  
+  
+  public constant real TAG_LIFE_SPAN = 3   // 
+  public constant real TAG_FADE_POINT = 2   // 
+  public constant real TAG_UPDATE_INTERVAL =  0.2 // 
+  public constant real TAG_VELOCITY_SPEED = 64 // 
+  public constant real TAG_VELOCITY_ANGLE =  90 // 
+  public constant boolean TAG_PERMANENT = false   // 永久与否
+  public constant boolean TAG_VISIBILITY = true   // 是否可见
+  
+  //public constant location LOCATION = Location(X, Y)
+
+function CreateTextTagUnitBJ takes string s, unit whichUnit, real zOffset, real size, real red, real green, real blue, real transparency returns texttag
+  
+hazy	微茫的	B0 E0 E6
+  176 224 230
+  
+endglobals
+
+public struct tag
+  private color c = 0
+  private real lifespan = TAG_LIFE_SPAN
+  private real fadepoint = TAG_FADE_POINT
+endstruct
+
+176 / 16
+
+
+function CreateTextTagLocBJ takes string s, location loc, real zOffset, real size, real red, real green, real blue, real transparency returns texttag
+    set bj_lastCreatedTextTag = CreateTextTag()
+    call SetTextTagTextBJ(bj_lastCreatedTextTag, s, size)
+    call SetTextTagPosBJ(bj_lastCreatedTextTag, loc, zOffset)
+    call SetTextTagColorBJ(bj_lastCreatedTextTag, red, green, blue, transparency)
+
+    return bj_lastCreatedTextTag
+
+endlibrary

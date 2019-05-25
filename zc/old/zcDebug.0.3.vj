@@ -1,0 +1,28 @@
+/*
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+1. 将测试部分分离到 test\testZC.vj
+
+*/
+
+/*
+test
+  testZC.vj
+*/
+
+library zcDebug
+
+globals
+  public constant boolean DEBUG_COLOR_RED = true
+  public constant string DEBUG_TITLE_FORMATTED = "|cffff0000[测试]|r "
+endglobals
+
+struct zcDebugs
+  // 输出信息
+  public static method output takes string text returns nothing
+    call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+  endmethod
+endstruct
+
+endlibrary
+

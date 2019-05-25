@@ -1,0 +1,106 @@
+/*
+zcColor.0.3.1.vj 2018-5-11 9:58:02
+
+0. zcUtils 版本 0.3 >> 0.3.3
+
+1. 修改 全局常量名 zcCOLOR_MIN >> zcColor_Min
+  修改 全局常量名 zcCOLOR_MAX >> zcColor_Max
+  修改 全局常量名 zcCOLOR_UNKNOWN >> zcColor_Alpha
+  修改 全局常量名 zcCOLOR_PREFIX >> zcColor_Prefix
+  修改 全局常量名 zcCOLOR_POSTFIX >> zcColor_Postfix
+
+2. 删除 结构 zcColorUs
+  删除的功能 已经转移到 zcUtils.0.3.3.vj 中的 结构 zcUtilsColors
+
+3. 结构 zcColors 增加 成员 alpha
+  使用 DSG 设置 成员 alpha red green blue
+*/
+
+/*
+lib
+zcUtils.0.3.3.vj 2018-5-11 9:40:41
+
+*/
+
+/*
+test
+
+*/
+
+/* 原理
+text color format
+|cffrdgnbl[TEXT]|r
+
+|c alpha red green blue TEXT |r
+*/
+
+library zcColor initializer init requires zcUtils
+
+globals
+  constant integer zcColor_Min = 0
+  constant integer zcColor_Max = 0xff
+  
+  constant string zcColor_Alpha = "ff"
+  constant string zcColor_Prefix = "|c"
+  constant string zcColor_Postfix = "|r"
+endglobals
+
+struct zcColors
+//! textmacro TM_zcColors_DSG takes METHOD, TYPE, VALUE, MEMBER
+  private $TYPE$ $MEMBER$ = $VALUE$             
+  method operator $METHOD$ takes nothing returns $TYPE$
+    return this.$MEMBER$
+  endmethod
+  method operator $METHOD$= takes $TYPE$ a$MEMBER$ returns nothing
+    if (a$MEMBER$ > zcColor_Max) then
+      set a$MEMBER$ = zcColor_Max
+    elseif (a$MEMBER$ < zcColor_Min) then
+      set a$MEMBER$ = zcColor_Min
+    endif
+    set this.$MEMBER$ = a$MEMBER$
+  endmethod
+//! endtextmacro
+//! runtextmacro TM_zcColors_DSG("alpha", "integer", "0xff", "ialpha")
+//! runtextmacro TM_zcColors_DSG("red", "integer", "0", "ired")
+//! runtextmacro TM_zcColors_DSG("green", "integer", "0", "igreen")
+//! runtextmacro TM_zcColors_DSG("blue", "integer", "0", "iblue")
+  
+  method operator value takes nothing returns string
+    local integer ipcv = this.ired * 0x10000 + this.igreen * 0x100 + this.iblue
+    if this.ired < 0x10 then
+      return "0" + zcUtilsInts.i2h(ipcv)
+    endif
+    return zcUtilsInts.i2h(ipcv)
+  endmethod
+  
+  method format takes string astext returns string
+    return zcColor_Prefix + zcUtilsColors.i2c(this.ialpha) + this.value + astext + zcColor_Postfix
+  endmethod
+  
+  static method create takes integer aired, integer aigreen, integer aiblue returns thistype
+    local thistype ttps = thistype.allocate()
+    if ttps == 0 then
+      return 0
+    endif
+    
+    set ttps.red = aired
+    set ttps.green = aigreen
+    set ttps.blue = aiblue
+    
+    return ttps
+  endmethod
+  
+  method destroy takes nothing returns nothing
+    if this != 0 then
+      // 在手动解析之后 调用系统解析 回收编号
+      call this.deallocate()
+    endif
+    debug call zcDebugs.output("zcColors ... destroyed!")
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+endlibrary

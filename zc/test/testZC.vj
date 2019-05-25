@@ -1,0 +1,143 @@
+/* 
+testZC.vj 2018-5-3 18:40:09
+
+test lib
+zcDebug.0.3.vj 2018-5-3 18:54:02
+zcUtils.0.3.vj 2018-5-3 18:56:35
+zcColor.0.3.vj 2018-5-3 18:58:31
+zcPoint.0.3.vj 2018-5-3 19:02:01
+zcTable.0.3.vj 2018-5-3 19:05:08
+
+*/
+
+scope testZC initializer init
+
+globals
+  private boolean tested = false
+endglobals
+
+  // lib zcDebug
+private function zcDebug takes nothing returns nothing
+  // Test
+  if tested then
+    return
+  else
+    set tested = true
+  endif
+
+  // lib zcDebug
+  static if LIBRARY_zcDebug then
+    call zcDebugs.output("唐立新!")
+  endif
+endfunction
+
+  // lib zcUtils
+private function zcUtils takes nothing returns nothing
+  static if LIBRARY_zcUtils and LIBRARY_zcUtils then
+    call zcDebugs.output( "|cffB0E0E6[测试]|r 事件" )
+    call zcDebugs.output( "hazy	微茫的	B0 E0 E6" )
+    call zcDebugs.output( zcUsInt.i2h(176) + zcUsInt.i2h(224) + zcUsInt.i2h(230) )
+    call zcDebugs.output( zcUsInt.i2h(224) )
+    call zcDebugs.output( zcUsInt.i2h(230) )
+  endif
+endfunction
+
+  // lib zcColor
+private function zcColor takes nothing returns nothing
+  static if LIBRARY_zcDebug and LIBRARY_zcUtils and LIBRARY_zcColor then
+    local zcColors c = zcColors.create(1,2,3)
+    local zcColors red = zcColors.create(255,0,0)
+    local zcColors green = zcColors.create(0,255,0)
+    local zcColors blue = zcColors.create(0,0,255)
+    local zcColors c1 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+    local zcColors c2 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+    local zcColors c3 = zcColors.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+    
+    set c.red= 22
+    set c.green = 44
+    
+    call zcDebugs.output(red.format(red.value))
+    call zcDebugs.output(green.format(green.value))
+    call zcDebugs.output(blue.format(blue.value))
+    call zcDebugs.output(c.format("hazy	微茫的 c") + c.value)
+    call zcDebugs.output(c1.format("hazy	微茫的 c1") + c1.value)
+    call zcDebugs.output(c2.format("hazy	微茫的 c2") + c2.value)
+    call zcDebugs.output(c3.format("hazy	微茫的 c3") + c3.value)
+    
+    call c.destroy()
+    call red.destroy()
+    call green.destroy()
+    call blue.destroy()
+    call c1.destroy()
+    call c2.destroy()
+    call c3.destroy()
+    
+    call zcDebugs.output( "|cff" + zcUsInt.i2h(176) + zcUsInt.i2h(224) + zcUsInt.i2h(230) + "|r" )
+    call zcDebugs.output( "|c00" + zcUsInt.i2h(255) + zcColorUs.i2c(0) + zcColorUs.i2c(0) + "hazy	微茫的	B0 E0 E6|r" )
+  endif
+endfunction
+
+  // lib zcPoint
+private function zcPoint takes nothing returns nothing
+  static if LIBRARY_zcDebug and LIBRARY_zcPoint then
+    local zcPoints p = zcPoints.create(1, 2, 3)
+    local location lp = p.loc
+    
+    call zcDebugs.output("X : " + R2S(GetLocationX(lp)))
+    call zcDebugs.output("Y : " + R2S(GetLocationY(lp)))
+    call zcDebugs.output("Z : " + R2S(GetLocationZ(lp)))
+    
+    
+    call SetCameraQuickPosition(GetLocationX(lp), GetLocationY(lp))
+    call RemoveLocation(lp)
+    call p.destroy()
+  endif
+endfunction
+
+  // lib zcTable
+private function zcTable takes nothing returns nothing
+  static if LIBRARY_zcDebug and LIBRARY_zcTable then
+    local zcTables t = zcTables.create()
+  
+    set t.integer[1] = 11
+    call zcDebugs.output("t : " + I2S(t))
+    call zcDebugs.output("t.integer[1] : " + I2S(t.integer[1]))
+    if t.has(1) then
+      call zcDebugs.output("t.has(1) : true")
+    else
+      call zcDebugs.output("t.has(1) : false")
+    endif
+    call t.remove(1)
+    call t.destroy()
+    call zcDebugs.output("t : " + I2S(t))
+    
+    if t.has(1) then
+      call zcDebugs.output("t.has(1) : true")
+    else
+      call zcDebugs.output("t.has(1) : false")
+    endif
+  endif
+endfunction
+
+private function init takes nothing returns nothing
+  // Test
+  
+  // lib zcDebug
+  call zcDebug()
+
+  // lib zcUtils
+  call zcUtils()
+  
+  // lib zcColor
+  call zcColor()
+  
+  // lib zcPoint
+  call zcPoint()
+  
+  // lib zcTable
+  call zcTable()
+endfunction
+
+
+endscope
+

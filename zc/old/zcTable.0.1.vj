@@ -1,0 +1,282 @@
+/*
+zcTable.0.1.vj 2018-5-1 15:45:30
+
+see
+  copy from >> F:\app\war3\lib\NewTable 4.1.0.1.vj
+
+lib
+
+
+lib optional
+zcDebug.0.1.vj
+
+*/
+
+/*
+api
+  local Table t = Table.create()
+  set t.integer[1] = 11
+  call t.has(1)
+  call t.remove(1)
+  call t.destroy()
+
+*/
+
+library zcTable initializer init requires optional zcDebug
+
+globals
+  public constant integer STRUCT_ZERO = 0 // 空值 无意义值
+  public constant integer ARRAY_MAX_SIZE = JASS_MAX_ARRAY_SIZE - 2 // 8192 - 2
+  
+
+  private integer INDEX_TA = STRUCT_ZERO // Table array index [ < 0]
+  private integer INDEX_T = ARRAY_MAX_SIZE // Table index [ > 8190 ]
+  //Configure it if you use more than 8190 "key" variables in your map (this will never happen though).
+  
+  private hashtable HT = InitHashtable() // cache
+  
+  private key SK_S // [stack key] size - unique integer - 表示 大小 - size 的哈希表 父键
+  private key SK_DT // [stack key] data Table - unique integer - 表示 数据表 - data Table 的哈希表 父键
+  
+endglobals
+
+// 栈
+// stack
+private struct stack extends array
+  public static method operator ks takes nothing returns Table // auto typecast | integer > Table
+    return SK_S
+  endmethod
+  public static method operator kdt takes nothing returns Table // auto typecast | integer > Table
+    return SK_DT
+  endmethod
+endstruct
+
+// N - struct | module name
+// T  - type
+// NF - native function
+//! textmacro zcTABLE_BIRS takes N, T, NF1, NF2
+private struct $N$s extends array
+  public method operator [] takes integer i returns $T$
+    return Load$NF1$(HT, this, i)
+  endmethod
+  public method operator []= takes integer i, $T$ v returns nothing
+    call Save$NF1$(HT, this, i, v)
+  endmethod
+  public method has takes integer i returns boolean
+    return HaveSaved$NF2$(HT, this, i)
+  endmethod
+  public method remove takes integer i returns nothing
+    call RemoveSaved$NF2$(HT, this, i)
+  endmethod
+endstruct
+
+private module $N$m
+  public method operator $T$ takes nothing returns $N$s
+    return this
+  endmethod
+endmodule
+//! endtextmacro
+
+
+//! textmacro zcTABLE_HANDLE takes N, T, NF
+private struct $N$s extends array
+  public method operator [] takes integer i returns $T$
+    return Load$NF$Handle(HT, this, i)
+  endmethod
+  public method operator []= takes integer i, $T$ v returns nothing
+    call Save$NF$Handle(HT, this, i, v)
+  endmethod
+  public method has takes integer i returns boolean
+    return HaveSavedHandle(HT, this, i)
+  endmethod
+  public method remove takes integer i returns nothing
+    call RemoveSavedHandle(HT, this, i)
+  endmethod
+endstruct
+
+private module $N$m
+  public method operator $T$ takes nothing returns $N$s
+    return this
+  endmethod
+endmodule
+//! endtextmacro
+
+// zcTABLE_BIRS
+//! runtextmacro zcTABLE_BIRS("boolean", "boolean", "Boolean", "Boolean")
+//! runtextmacro zcTABLE_BIRS("integer", "integer", "Integer", "Integer")
+//! runtextmacro zcTABLE_BIRS("real", "real", "Real", "Real")
+//! runtextmacro zcTABLE_BIRS("string", "string", "Str", "String")
+
+// zcTABLE_HANDLE
+//! runtextmacro zcTABLE_HANDLE("ability", "ability", "Ability")
+//! runtextmacro zcTABLE_HANDLE("boolexpr", "boolexpr", "BooleanExpr")
+//! runtextmacro zcTABLE_HANDLE("button", "button", "Button")
+//! runtextmacro zcTABLE_HANDLE("defeatcondition", "defeatcondition", "DefeatCondition")
+//! runtextmacro zcTABLE_HANDLE("destructable", "destructable", "Destructable")
+//! runtextmacro zcTABLE_HANDLE("dialog", "dialog", "Dialog")
+//! runtextmacro zcTABLE_HANDLE("effect", "effect", "Effect")
+//! runtextmacro zcTABLE_HANDLE("fogmodifier", "fogmodifier", "FogModifier")
+//! runtextmacro zcTABLE_HANDLE("fogstate", "fogstate", "FogState")
+//! runtextmacro zcTABLE_HANDLE("force", "force", "Force")
+//! runtextmacro zcTABLE_HANDLE("group", "group", "Group")
+//! runtextmacro zcTABLE_HANDLE("image", "image", "Image")
+//! runtextmacro zcTABLE_HANDLE("item", "item", "Item")
+//! runtextmacro zcTABLE_HANDLE("itempool", "itempool", "ItemPool")
+//! runtextmacro zcTABLE_HANDLE("leaderboard", "leaderboard", "Leaderboard")
+//! runtextmacro zcTABLE_HANDLE("lightning", "lightning", "Lightning")
+//! runtextmacro zcTABLE_HANDLE("location", "location", "Location")
+//! runtextmacro zcTABLE_HANDLE("multiboard", "multiboard", "Multiboard")
+//! runtextmacro zcTABLE_HANDLE("multiboarditem", "multiboarditem", "MultiboardItem")
+//! runtextmacro zcTABLE_HANDLE("player", "player", "Player")
+//! runtextmacro zcTABLE_HANDLE("quest", "quest", "Quest")
+//! runtextmacro zcTABLE_HANDLE("questitem", "questitem", "QuestItem")
+//! runtextmacro zcTABLE_HANDLE("rect", "rect", "Rect")
+//! runtextmacro zcTABLE_HANDLE("region", "region", "Region")
+//! runtextmacro zcTABLE_HANDLE("sound", "sound", "Sound")
+//! runtextmacro zcTABLE_HANDLE("texttag", "texttag", "TextTag")
+//! runtextmacro zcTABLE_HANDLE("timerdialog", "timerdialog", "TimerDialog")
+//! runtextmacro zcTABLE_HANDLE("timer", "timer", "Timer")
+//! runtextmacro zcTABLE_HANDLE("trackable", "trackable", "Trackable")
+//! runtextmacro zcTABLE_HANDLE("triggeraction", "triggeraction", "TriggerAction")
+//! runtextmacro zcTABLE_HANDLE("triggercondition", "triggercondition", "TriggerCondition")
+//! runtextmacro zcTABLE_HANDLE("event", "event", "TriggerEvent")
+//! runtextmacro zcTABLE_HANDLE("trigger", "trigger", "Trigger")
+//! runtextmacro zcTABLE_HANDLE("ubersplat", "ubersplat", "Ubersplat")
+//! runtextmacro zcTABLE_HANDLE("unit", "unit", "Unit")
+//! runtextmacro zcTABLE_HANDLE("unitpool", "unitpool", "UnitPool")
+//! runtextmacro zcTABLE_HANDLE("widget", "widget", "Widget")
+
+//! runtextmacro zcTABLE_HANDLE("hashtable", "hashtable", "Hashtable")
+
+struct Table extends array
+  
+  implement booleanm
+  implement integerm
+  implement realm
+  implement stringm
+  
+  
+  implement abilitym
+  implement boolexprm
+  implement buttonm
+  implement defeatconditionm
+  implement destructablem
+  implement dialogm
+  implement effectm
+  implement fogmodifierm
+  implement fogstatem
+  implement forcem
+  implement groupm
+  implement imagem
+  implement itemm
+  implement itempoolm
+  implement leaderboardm
+  implement lightningm
+  implement locationm
+  implement multiboardm
+  implement multiboarditemm
+  implement playerm
+  implement questm
+  implement questitemm
+  implement rectm
+  implement regionm
+  implement soundm
+  implement texttagm
+  implement timerdialogm
+  implement timerm
+  implement trackablem
+  implement triggeractionm
+  implement triggerconditionm
+  implement eventm
+  implement triggerm
+  implement ubersplatm
+  implement unitm
+  implement unitpoolm
+  implement widgetm
+  
+  implement hashtablem
+
+  //set this = tb[GetSpellAbilityId()]
+  public method operator [] takes integer i returns thistype
+    return LoadInteger(HT, this, i) //return this.integer[i]
+  endmethod
+  
+  //set tb[389034] = 8192
+  public method operator []= takes integer i, thistype t returns nothing
+    call SaveInteger(HT, this, i, t) //set this.integer[i] = tb
+  endmethod
+  
+  //set b = tb.has(2493223)
+  public method has takes integer i returns boolean
+    return HaveSavedInteger(HT, this, i) //return this.integer.has(i)
+  endmethod
+  //call tb.remove(294080)
+  public method remove takes integer i returns nothing
+    call RemoveSavedInteger(HT, this, i) //return this.integer.remove(i)
+  endmethod
+  //Remove all data from a Table instance
+  public method flush takes nothing returns nothing
+    call FlushChildHashtable(HT, this)
+  endmethod
+  
+  public static method create takes nothing returns thistype
+    local thistype this = stack.kdt[0]  // 初始化值 空值 = Table(kdt)[0]
+    
+    if this == 0 then
+      set this = INDEX_T + 1 // INDEX_T = ARRAY_MAX_SIZE = 8190 // Table index [ > 8190 ]
+      set INDEX_T = this     // 8191
+    else
+      set stack.kdt[0] = stack.kdt[this] // Table(kdt)[0] = Table(kdt)[tt] - Table(kdt)[8191]
+      call stack.kdt.remove(this)
+    endif
+    
+    return this
+  endmethod
+  
+  // Removes all data from a Table instance and recycles its index.
+  // call tb.destroy()
+  public method destroy takes nothing returns nothing
+    set stack.kdt[this] = stack.kdt[0]
+    set stack.kdt[0] = this
+    
+    call this.flush()
+  endmethod
+endstruct
+
+
+
+
+
+private function init takes nothing returns nothing
+  // initialize
+  //local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+
+  
+  // debug check
+  static if LIBRARY_zcDebug then
+    local Table t = Table.create()
+  
+    set t.integer[1] = 11
+    call zcDebug_output.msg("t : " + I2S(t))
+    call zcDebug_output.msg("t.integer[1] : " + I2S(t.integer[1]))
+    if t.has(1) then
+      call zcDebug_output.msg("t.has(1) : true")
+    else
+      call zcDebug_output.msg("t.has(1) : false")
+    endif
+    call t.remove(1)
+    call t.destroy()
+    call zcDebug_output.msg("t : " + I2S(t))
+    
+    if t.has(1) then
+      call zcDebug_output.msg("t.has(1) : true")
+    else
+      call zcDebug_output.msg("t.has(1) : false")
+    endif
+  endif
+endfunction
+
+
+endlibrary
+

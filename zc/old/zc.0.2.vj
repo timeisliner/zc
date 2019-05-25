@@ -1,0 +1,147 @@
+/* Zone Center | Zone Code
+zc.0.2.vj 2018-5-7 19:52:21
+
+1. 增加详细说明
+
+*/
+
+/*
+lib
+zcUtils.0.3.vj 2018-5-3 18:56:35
+
+lib optional
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+*/
+
+/*
+test
+  testZC.vj
+
+*/
+
+/*
+整合 common.j 中较为常用且与 [关键字] 相关的 api
+包括提供一些便利的方法，这会加重程序运行负担，也能极大提高编程效率
+*/
+
+
+/* 修饰符
+library 库 -起始标识 会将代码放置在脚本顶端，可以将库看成是一个拥有与库名相同的域
+    initializer 初始化方法，使用 ExecuteFunc 调用
+    requires 前置库
+    optional 可选的前置库
+  
+  endlibrary 库 -结束标识
+  
+globals 全局声明 -起始标识
+    public 公有 库名+变量名
+    private 私有
+  
+  endglobals 全局声明 -结束标识
+  
+scope 域 -起始标识 不会将代码放置在 脚本顶端
+  initializer 初始化方法，使用 call 调用
+    heavy process
+      better use a library initializer
+      or call a subfunction using ExecuteFunc from the scope initializer.
+  public  公有 域内外都可使用
+    原理:固定名 =    SCP_ + 名字     =  库名/域名 + 下划线 + 名字
+    function 能被用于 ExecuteFunc 或者 real变量事件，但必须使用 固定名
+  private 私有 域内随意使用，域外禁止使用，同时使之优先级[覆盖之前的定义]最高
+    原理:随机命名  =  scopename(random digit)__   + 名字     
+    引用 SCOPE_PRIVATE       用于 ExecuteFunc
+
+
+  endscope 域 -结束标识
+
+struct 结构 -起始标识
+  public struct 固定命名 使用时需要加上 库名或域名
+    结构成员 默认为 public
+  private struct 随机命名
+  struct 常量名 使用时只需要使用 原名
+    static 静态 能直接在 结构名后.调用 不需要实例化
+      可以使用 private 关键字
+      能作为 code 参数
+    this 关联当前 结构实例
+      可以使用 . 代替该关键字
+    method
+      可以在 global 块以外的地方使用
+      不能在method内使用
+        wait
+        sync native
+        GetTriggeringTrigger() 
+    static method create takes real a, real b, real c returns encap
+      struct.allocate()  自定义 结构 crete 方式时 必须调用该方法
+    static method destroy takes nothing returns nothing
+      struct.deallocate() 自定义 结构 destroy 方式时 必须调用该方法
+    method onDestroy takes nothing returns nothing
+      调用 destroy 方法时 自动调用
+      不知道 能否 private 修饰
+    static method onInit takes nothing returns nothing 地图初始化时自动调用
+      private
+      public
+      在所有 library 的 initializer 之前 执行
+      在所在 library 的 scope 的 initializer 之前 执行
+      不同结构的 onInit 方法执行顺序 基于脚本中被发现的位置，先发现先执行
+      
+    
+  endstruct 结构 -结束标识
+*/
+library zc initializer init requires libraryA optional libraryB
+
+globals
+  private constant string array I2Hs
+  public constant integer I_HEX_LIMIT = 16
+     
+endglobals
+
+struct sname
+  private integer member = 1
+
+  
+//! textmacro TM_sname_GET takes ATTR, MBR, TYPE
+  method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_sname_GET("message", "msg", "string")
+//! runtextmacro TM_sname_GET("duration", "dur", "real")
+
+//! textmacro TM_sname_SET takes ATTR, ARG, MBR, TYPE
+  method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_sname_SET("message", "amsg", "msg", "string")
+  
+  
+  // constructor
+  static method create takes integer a, real b, code c returns thistype
+    local thistype tt = thistype.allocate()
+  endmethod
+    
+  // destructor
+  method destroy takes nothing returns nothing
+    thistype.deallocate()
+  endmethod
+    
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+endfunction
+
+
+endlibrary
+

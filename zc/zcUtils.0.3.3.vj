@@ -1,0 +1,144 @@
+/*
+zcUtils.0.3.3.vj 2018-5-11 9:40:41
+
+1. 修改 全局常量名 zcUs_I2H_LIMIT >> zcUtils_I2H
+  修改 数组名 I2HCache >> I2HCache
+  修改 结构名 zcUsTimes >> zcUtilsTimes
+  修改 结构名 zcUsInt >> zcUtilsInts
+  
+  修改 全局变量名 initialized >> Ready
+  修改 全局变量名 I2Hs_ready >> I2HCacheReady
+
+2. 添加 结构 zcUtilsColors
+  static i2c(integer)string 整数 >> 颜色码 字符串 2位十六进制
+  
+*/
+
+/*
+test
+
+*/
+
+/*
+zcUtils 存放一些常用的功能性函数
+
+*/
+
+library zcUtils initializer init
+
+globals
+  constant integer zcUtils_I2H = 16
+  
+  private string array I2HCache[zcUtils_I2H]
+endglobals
+
+  // 时间相关
+struct zcUtilsTimes
+  // 整数 >> 字符串 分钟:秒钟
+  static method i2t4ms takes integer aitime returns string
+    local string sptime = ""
+    local integer ipmin = aitime / 60
+    local integer ipsec = aitime - ipmin * 60
+    
+    if ipmin < 10 then
+      set sptime = "0" + I2S(ipmin)
+    else
+      set sptime = I2S(ipmin)
+    endif
+    
+    if ipsec < 10 then
+      return sptime + ":" + "0" + I2S(ipsec)
+    endif
+    
+    return sptime + ":" + I2S(ipsec)
+  endmethod
+  // 浮点数 >> 字符串 分钟:秒钟
+  static method r2t4ms takes real artime returns string
+    return i2t4ms(R2I(artime))
+  endmethod
+endstruct
+
+  // 整数相关
+struct zcUtilsInts
+  // 整数 >> 十六进制 字符串
+  static method i2h takes integer ainumber returns string
+    local integer ipcurr = 0
+    local integer ipnext = 0
+    
+    local string sphex = ""
+    local boolean bpend = false
+    
+    loop
+      set ipnext = ainumber / zcUtils_I2H
+      if ipnext > 0 then
+        set ipcurr = ainumber - ipnext * zcUtils_I2H
+        set sphex = I2HCache[ipcurr] + sphex
+        set ainumber = ipnext
+      else
+        set sphex = I2HCache[ainumber] + sphex
+        set bpend = true
+      endif
+      exitwhen bpend
+    endloop
+    
+    return sphex
+  endmethod
+  
+endstruct
+  // 颜色相关
+struct zcUtilsColors
+  // 整数 >> 颜色码 字符串 2位十六进制
+  static method i2c takes integer ainumber returns string
+    local string spcolor = ""
+    
+    if ainumber > zcColor_Max then
+      set ainumber = zcColor_Max
+    elseif ainumber < zcColor_Min then
+      set ainumber = zcColor_Min
+    endif
+    
+    if ainumber < zcUtils_I2H then
+    // 补齐2位
+      set spcolor = "0"
+    endif
+    
+    return spcolor + zcUtilsInts.i2h(ainumber)
+  endmethod
+endstruct
+
+globals
+  private boolean Ready = false
+  private boolean I2HCacheReady = false
+endglobals
+
+private function init takes nothing returns nothing
+  if Ready then
+    return
+  endif
+
+  if not I2HCacheReady then
+    set I2HCache[0] = "0"
+    set I2HCache[1] = "1"
+    set I2HCache[2] = "2"
+    set I2HCache[3] = "3"
+    set I2HCache[4] = "4"
+    set I2HCache[5] = "5"
+    set I2HCache[6] = "6"
+    set I2HCache[7] = "7"
+    set I2HCache[8] = "8"
+    set I2HCache[9] = "9"
+    set I2HCache[10] = "A"
+    set I2HCache[11] = "B"
+    set I2HCache[12] = "C"
+    set I2HCache[13] = "D"
+    set I2HCache[14] = "E"
+    set I2HCache[15] = "F"
+    
+    set I2HCacheReady = true
+  endif
+
+  set Ready = true
+endfunction
+
+endlibrary
+

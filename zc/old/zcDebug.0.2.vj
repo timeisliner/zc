@@ -1,0 +1,60 @@
+/*
+zcDebug.0.2.vj 2018-5-3 4:31:00
+
+1. 修改 public struct output 为 struct zcDebugs
+2. 修改 private 为 public
+  private constant boolean DEBUG_COLOR_RED = true
+  private constant string DEBUG_TITLE_FORMATTED = "|cffff0000[测试]|r "
+  并删除 private constant string DEBUG_TITLE = "[测试] "
+3. 修改
+  public static method msg takes string text returns nothing
+    static if LIBRARY_zcColor then
+      local zcColor_color c = zcColor_color.create(255, 0, 0)
+      if (c != 0 and c.value != "") then
+        call BJDebugMsg(c.format(DEBUG_TITLE) + text)
+      else
+        call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+      endif
+      call c.destroy()
+    else
+      call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+    endif
+    
+  endmethod
+  为
+  public static method output takes string text returns nothing
+    call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+  endmethod
+4. 修改
+  call output.msg("唐立新!")
+  为
+  call zcDebugs.output("唐立新!")
+
+
+
+
+lib
+
+lib optional
+
+*/
+
+library zcDebug initializer init 
+
+globals
+  public constant boolean DEBUG_COLOR_RED = true
+  public constant string DEBUG_TITLE_FORMATTED = "|cffff0000[测试]|r "
+endglobals
+
+struct zcDebugs
+  // 输出信息
+  public static method output takes string text returns nothing
+    call BJDebugMsg(DEBUG_TITLE_FORMATTED + text)
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+  call zcDebugs.output("唐立新!")
+endfunction
+endlibrary
+

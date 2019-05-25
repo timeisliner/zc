@@ -1,0 +1,79 @@
+/*
+zcUtils.0.2.vj 2018-5-3 4:44:20
+
+0. 修改 zcDebug 版本 0.1 为 0.2
+1. 修改 public constant integer I_HEX_LIMIT 为 constant integer zcUs_I2H_LIMIT
+2. 修改 public struct zcUsInt 为 struct zcUsInt
+
+lib
+
+lib optional
+zcDebug.0.2.vj
+
+*/
+
+library zcUtils initializer init requires optional zcDebug
+
+globals
+  constant integer zcUs_I2H_LIMIT = 16
+  
+  private constant string array I2Hs
+endglobals
+
+struct zcUsInt
+  // 转换 整数 为 十六进制 字符串
+  public static method i2h takes integer num returns string hexs
+    local integer curr = 0
+    local integer next = 0
+    
+    local string hexs = ""
+    local boolean end = false
+    
+    loop
+      set next = num / zcUs_I2H_LIMIT
+      if (next > 0) then
+        set curr = num - next * zcUs_I2H_LIMIT
+        set hexs = I2Hs[curr] + hexs
+        set num = next
+      else
+        set hexs = I2Hs[num] + hexs
+        set end = true
+      endif
+      exitwhen end
+    endloop
+    
+    return hexs
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  set I2Hs[0] = "0"
+  set I2Hs[1] = "1"
+  set I2Hs[2] = "2"
+  set I2Hs[3] = "3"
+  set I2Hs[4] = "4"
+  set I2Hs[5] = "5"
+  set I2Hs[6] = "6"
+  set I2Hs[7] = "7"
+  set I2Hs[8] = "8"
+  set I2Hs[9] = "9"
+  set I2Hs[10] = "A"
+  set I2Hs[11] = "B"
+  set I2Hs[12] = "C"
+  set I2Hs[13] = "D"
+  set I2Hs[14] = "E"
+  set I2Hs[15] = "F"
+  
+  
+  static if LIBRARY_zcDebug then
+    call zcDebugs.output( "|cffB0E0E6[测试]|r 事件" )
+    call zcDebugs.output( "hazy	微茫的	B0 E0 E6" )
+    call zcDebugs.output( zcUsInt.i2h(176) + zcUsInt.i2h(224) + zcUsInt.i2h(230) )
+    call zcDebugs.output( zcUsInt.i2h(224) )
+    call zcDebugs.output( zcUsInt.i2h(230) )
+  endif
+endfunction
+
+endlibrary
+

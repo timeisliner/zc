@@ -1,0 +1,156 @@
+/* 
+zcTrigger.0.1.vj 2018-5-7 19:03:14
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+
+
+lib optional
+
+
+*/
+
+/*
+test
+  
+
+*/
+
+/*
+集合common.j 中较为常用且与 trigger 相关的api
+
+type
+type agent              extends     handle 
+type trigger            extends     agent
+type triggercondition   extends     agent
+type triggeraction      extends     handle
+
+*/
+
+library zcTrigger initializer init
+
+globals
+  // 触发器状态 status
+  private constant integer UNINIT = 0   // 未初始化
+  private constant integer ON = 1   // 启用
+  private constant integer OFF = 2  // 禁用
+  private constant integer RESET = 3    // 重置
+  private constant integer SLEEP = 4    // 睡眠
+  private constant integer WAKEN = 5    // 唤醒
+  
+  
+  private constant integer Max = 100          // bj_MAX_QUEUED_TRIGGERS
+  private constant real Timeout = 180.00      // bj_QUEUED_TRIGGER_TIMEOUT
+  
+endglobals
+
+/*
+//============================================================================
+// Native trigger interface
+//
+native CreateTrigger    takes nothing returns trigger
+native DestroyTrigger   takes trigger whichTrigger returns nothing
+native ResetTrigger     takes trigger whichTrigger returns nothing
+native EnableTrigger    takes trigger whichTrigger returns nothing
+native DisableTrigger   takes trigger whichTrigger returns nothing
+native IsTriggerEnabled takes trigger whichTrigger returns boolean
+
+native TriggerWaitOnSleeps   takes trigger whichTrigger, boolean flag returns nothing
+native IsTriggerWaitOnSleeps takes trigger whichTrigger returns boolean
+
+constant native GetFilterUnit       takes nothing returns unit
+constant native GetEnumUnit         takes nothing returns unit
+
+constant native GetFilterDestructable   takes nothing returns destructable
+constant native GetEnumDestructable     takes nothing returns destructable
+
+constant native GetFilterItem           takes nothing returns item
+constant native GetEnumItem             takes nothing returns item
+
+constant native GetFilterPlayer     takes nothing returns player
+constant native GetEnumPlayer       takes nothing returns player
+
+constant native GetTriggeringTrigger    takes nothing returns trigger
+constant native GetTriggerEventId       takes nothing returns eventid
+constant native GetTriggerEvalCount     takes trigger whichTrigger returns integer
+constant native GetTriggerExecCount     takes trigger whichTrigger returns integer
+
+native ExecuteFunc          takes string funcName returns nothing
+*/
+struct zcTriggers
+  private integer s = UNINIT    // status   触发器状态
+  private trigger t = null      // trigger  触发器
+
+  method operator trg takes nothing returns trigger
+    return this.t
+  endmethod
+  
+  // 启用 禁用 睡眠 唤醒 触发器
+//! textmacro TM_zcTriggers_ED takes METHOD, IS, VALUE, API
+  method $METHOD$ takes nothing returns nothing
+    if this.$IS$() then
+      set this.s = $VALUE$
+      call $API$
+    endif
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcTriggers_ED("on", "isOff", "ON", "EnableTrigger(this.t)")      // 启用
+//! runtextmacro TM_zcTriggers_ED("off", "isOn", "OFF", "DisableTrigger(this.t)")    // 禁用
+//! runtextmacro TM_zcTriggers_SW("sleep", "isWaken", "SLEEP", "TriggerWaitOnSleeps(this.t, true)")      // 睡眠
+//! runtextmacro TM_zcTriggers_SW("waken", "isSleep", "WAKEN", "TriggerWaitOnSleeps(this.t, false)")     // 唤醒
+
+  // 重置 触发器
+  method reset takes nothing returns nothing
+    set this.s = RESET
+    call ResetTrigger(this.t)
+  endmethod
+
+//! textmacro TM_zcTriggers_IS takes METHOD, EXP
+  method $METHOD$ takes nothing returns boolean
+    return $EXP$
+  endmethod 
+//! endtextmacro
+
+//! runtextmacro TM_zcTriggers_IS("isOn", "IsTriggerEnabled(this.t)")
+//! runtextmacro TM_zcTriggers_IS("isOff", "not IsTriggerEnabled(this.t)")
+//! runtextmacro TM_zcTriggers_IS("isReset", "this.s == RESET")
+//! runtextmacro TM_zcTriggers_IS("isSleep", "IsTriggerWaitOnSleeps(this.t)")
+//! runtextmacro TM_zcTriggers_IS("isWaken", "not IsTriggerWaitOnSleeps(this.t)")
+  
+  // constructor
+  static method create takes nothing returns thistype
+    local thistype tt = thistype.allocate()
+    
+    set tt.t = CreateTrigger()
+    set tt.s = ON
+    
+    return tt
+  endmethod
+  
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    if this.t != null then
+      call DestroyTrigger(this.t)
+      set this.t = null
+    endif
+    set this.s = UNINIT
+    debug call zcDebugs.output("zcTriggers .. destroyed!")
+  endmethod
+  
+endstruct
+
+
+private function init takes nothing returns nothing
+
+endfunction
+
+
+endlibrary
+

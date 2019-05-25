@@ -1,0 +1,52 @@
+/* 
+testGetHandleId4Timer.vj 2018-5-4 9:59:18
+
+test 
+GetHandleId(timer)
+
+required lib
+zcDebug.0.3.vj 2018-5-3 18:54:02
+*/
+
+scope testGetHandleId4Timer initializer init
+
+globals
+  private boolean tested = false
+endglobals
+
+//test GetHandleId(timer)
+private function GetHandleId4Timer takes nothing returns nothing
+  local timer t = CreateTimer()
+  
+  call zcDebugs.output("timer handle id : " + I2S(GetHandleId(t)))
+  
+  call DestroyTimer(t)
+  if t == null then
+    call zcDebugs.output("timer was destroyed!")
+  else
+    call zcDebugs.output("timer not null !")
+    call zcDebugs.output("handle id : " + I2S(GetHandleId(t)))
+  endif
+endfunction
+
+private function init takes nothing returns nothing
+  // Test
+  if tested then
+    return
+  else
+    set tested = true
+  endif
+  
+  if not LIBRARY_zcDebug then
+    call BJDebugMsg("error : LIBRARY zcDebug not found!")
+    return
+  endif
+  
+  //GetHandleId4Timer()
+  call GetHandleId4Timer()
+
+
+endfunction
+
+
+endscope

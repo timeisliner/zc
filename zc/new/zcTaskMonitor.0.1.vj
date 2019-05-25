@@ -1,0 +1,371 @@
+/*
+zcTaskMonitor.0.1.vj 2018-5-9 13:02:42
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+
+lib optional
+zcDebug.0.3.vj 2018-5-3 18:54:02
+
+*/
+
+/*
+test
+  @red testzcTask.0.1.vj 2018-5-8 17:58:25
+*/
+
+/*
+刷怪任务 监视器 用于组织管理 zcTask
+唯一 - 单实例
+*/
+
+library zcTaskMonitor initializer init requires zcTimerManager
+
+// 初始化 initializer
+globals
+  private boolean Ready = false
+  
+  // 最大任务数
+  private constant integer MAX = 100
+endglobals
+
+// 指令 instruction
+globals
+  // 入口指令 Main Instruction
+  private constant string MI = "t"
+  // 操作指令 Operate Instruction
+  private constant string OI_OFF = "off"
+  private constant string OI_ON = "on"
+  private constant string ENTRY = "-"
+  private constant string TEST = "c"
+  private constant string ORDER = "t"
+endglobals
+
+// 缓存 cache
+globals
+  // run 运行中的任务
+  // wait 等待中的任务
+  // off 关闭中的任务
+  // destroy 销毁任务
+  
+   
+  
+  private real GameTime = 0         // 游戏时间
+  
+  private zcOutputs out = 0             // 信息显示
+  private zcChats chat = 0              // 聊天检测
+  private zcTMDialogs zctmd = 0        // 计时器窗口
+  private zcTMTimers zctmt = 0        // 计时器
+  
+  
+  private integer array tsw[MAX]       // task wait 任务 缓存
+  private integer array tsr[MAX]       // task run  任务 缓存
+  private integer array tso[MAX]       // task off  任务 缓存
+  private integer tswc = 0             // task wait 任务 缓存 数量 - count
+  private integer tsrc = 0             // task run  任务 缓存 数量 - count
+  private integer tsoc = 0             // task off  任务 缓存 数量 - count
+  private integer tswv = -1            // task wait 任务 缓存 游标 - vernier [-1 空数组]
+  private integer tsrv = -1            // task run  任务 缓存 游标 - vernier [-1 空数组]
+  private integer tsov = -1            // task off  任务 缓存 游标 - vernier [-1 空数组]
+  
+  
+  
+  private group g = CreateGroup()
+  private integer c = 0
+endglobals
+
+// latest
+private function latestTSW takes nothing returns nothing
+  local integer n = 0
+  set tswv = 0
+  loop
+    if n != tswv and zcTasks(tsw[n]).start < zcTasks(tsw[tswv]).start then
+      set tswv = n
+    endif
+    set n  = n + 1
+    exitwhen n >= tswc
+  endloop
+  
+  set n = 0
+endfunction
+private function latestTSR takes nothing returns nothing
+  local integer n = 0
+  set tsrv = 0
+  loop
+    if n != tsrv and zcTasks(tsr[n]).onTime(zcTasks(tsr[tsrv]).onTimed()) then
+      set tsrv = n
+    endif
+    set n  = n + 1
+    exitwhen n >= tsrc
+  endloop
+  set n = 0
+endfunction
+
+private function onTask takes zcTasks at returns nothing
+    set at.time = GameTime
+    call at.on()
+    call out.show(at.message + at.info())
+    call at.onWork(g, c)
+endfunction
+
+// increment
+private function incTSR takes zcTasks at returns nothing
+  set tsr[tsrc] = at
+  if tsrv == -1 then
+    set tsrv = 0
+  elseif not zcTasks(tsr[tsrv]).onTime(at.time + at.timeout) then
+    set tsrv = tsrc
+  endif
+  set tsrc = tsrc + 1
+endfunction
+private function incTSO takes zcTasks at returns nothing
+  set tso[tsoc] = at
+  if tsov == -1 then
+    set tsov = 0
+  endif
+  set tsoc = tsoc + 1
+endfunction
+
+// decrease
+private function decTSW takes nothing returns nothing
+  set tswc = tswc - 1
+  if tswv != tswc then
+    set tsw[tswv] = tsw[tswc]
+  endif
+  if tswc  < 1 then
+    set tswv = -1
+  else
+    call latestTSW()
+  endif
+  set tsw[tswc] = 0
+endfunction
+private function decTSR takes nothing returns nothing
+  set tsrc = tsrc - 1
+  if tsrv != tsrc then
+    set tsr[tsrv] = tsr[tsrc]
+  endif
+  if tsrc  < 1 then
+    set tsrv = -1
+  else
+    call latestTSR()
+  endif
+  set tsr[tsrc] = 0
+endfunction
+
+
+private function monitor takes nothing returns nothing
+  local zcTasks ttp
+  call out.show("当前时间:" + R2S(GameTime) + " tswc:" + R2S(tswc) + " tsrc:" + R2S(tsrc) + " tsoc:" + R2S(tsoc) + " unit" + I2S(c))
+  
+  if tsrc < 1 then
+    set tsrv = -1
+  else
+    set ttp = tsr[tsrv]
+    if ttp.isOn() then
+      if ttp.onTime(GameTime) then
+        call onTask(ttp)
+        call latestTSR()
+      endif
+    else
+      call decTSR()
+      call incTSO(ttp)
+      call latestTSR()
+    endif
+  endif
+    
+  
+  if tswc < 1 then
+    set tswv = -1
+    return
+  endif
+  
+  if tswv == -1 then
+    call latestTSW()
+  endif
+  
+  set ttp = tsw[tswv]
+  if ttp.runnable(GameTime) then
+    call onTask(ttp)
+    call decTSW()
+    if ttp.isOn() then
+      call incTSR(ttp)
+    else
+      call incTSO(ttp)
+    endif
+  endif
+  set ttp = 0
+endfunction
+
+private function test takes nothing returns nothing
+  // call zctmd.status()
+  if not zctmd.isShow() then
+    call zctmd.show()
+    set zctmd.title = "good"
+  endif
+  call zcTimerManagers.timersinfo()
+  call zcTimerManagers.dialogsinfo()
+endfunction
+
+private function timerAction takes nothing returns nothing
+  set GameTime = GameTime + 1
+  call monitor()
+  call test()
+endfunction
+
+private function onTimer takes nothing returns nothing
+  local real timeout = 1
+  local boolean periodic = true
+  set zctmt = zcTMTimers.create()
+  call zctmt.start(timeout, periodic, function timerAction)
+  //local zcTriggers zct = zcTriggers.create()
+    
+  //call TriggerRegisterTimerEvent(zct.trg, timeout, periodic)
+  //call TriggerAddAction(zct.trg, function timerAction )
+  
+
+endfunction
+
+private function fillTSW takes nothing returns nothing
+  // 初始化 任务
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+endfunction
+
+private function chatAction takes nothing returns nothing
+  local string t = GetEventPlayerChatString()
+  local string mt = GetEventPlayerChatStringMatched()
+  local integer length = StringLength(t)
+  local integer order
+  
+  
+  local string entry = SubString(t, 1, 2)
+  local string space = SubString(t, 2, 3)
+  
+  call out.show("信息：" + t + " 长度：" + I2S(length))
+
+  
+  if length > 3 and space == " " then
+    if entry == TEST  then
+      call out.show("有效信息：" + SubString(t, 3, 10))
+    elseif entry == "o" then
+      if length == 5 and SubString(t, 3, 5) == "on" then
+        call chat.on()
+      elseif length == 6 and SubString(t, 3, 6) == "off" then
+        call chat.off()
+      else
+        call out.show("错误信息：" + t + "指令系统关闭中...")
+        call chat.destroy()
+      endif
+    elseif entry == ORDER then
+      if length == 4 then
+        set order = S2I(SubString(t, 3, 4))
+        call out.show("order : " + I2S(order))
+      elseif length == 5 then
+        set order = S2I(SubString(t, 3, 5))
+        call out.show("order : " + I2S(order))
+      else
+        call out.show("错误信息：" + t + " .. 跳过 ...")
+      endif
+    endif
+  endif
+  
+  
+  //call out.show("GetEventPlayerChatString " + t)
+  //call out.show("GetEventPlayerChatStringMatched " + mt)
+  //call out.show("StringCase upper:true" + StringCase(t, true))
+  //call out.show("StringCase upper:false " + StringCase(t, false))
+  //call out.show("GetLocalizedString " + GetLocalizedString(t))
+  //call out.show("StringLength " + I2S(StringLength(t)))
+  //call out.show("SubString 3 - 10 " + SubString(t, 3, 10))
+  //call out.show("SubString 0 - 2" + SubString(t, 0, 2))
+  //call out.show("StringHash " + I2S(StringHash(t)))
+endfunction
+
+// 输入指令检测
+// 指令标识 -
+private function onChat takes nothing returns nothing
+  local player p = Player(0)
+  set chat = zcChats.create(zcTriggers.create(), p)
+  set chat.exact = false
+  
+  call chat.run(ENTRY, function chatAction)
+  
+  if chat.exact then
+    call out.show("精确匹配：ON")
+  else
+    call out.show("精确匹配：OFF")
+  endif
+  
+
+  call out.show("输入： -c info")
+  call out.show("开启触发： -o on")
+  call out.show("关闭触发： -o off")
+  
+  set p = null
+endfunction
+
+
+
+private function init takes nothing returns nothing
+  // prevent reinit
+  if Ready then
+    return
+  endif
+  
+  
+  // config
+  call FogEnable(false)
+  call FogMaskEnable(false)
+  
+  // test lib zcTask
+  call fillTSW()
+  
+  // lib zcOutput
+  set out = zcOutputs.create("")
+  set out.duration = 200
+  
+  // init timer
+  call onTimer()
+  
+  // lib testzcChat
+  call onChat()
+  
+  // zcTimerManager
+  set zctmd = zcTMDialogs.create()
+  call zctmd.run()
+  
+  set Ready = true
+endfunction
+
+
+
+endlibrary
+
+

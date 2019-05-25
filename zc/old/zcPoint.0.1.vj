@@ -1,0 +1,70 @@
+/*
+zcPoint.0.1.vj 2018-5-1 7:46:49
+
+lib
+
+lib optional
+zcDebug.0.1.vj
+
+*/
+
+library zcPoint initializer init requires optional zcDebug
+
+globals
+  public constant integer DEFAULT_ORIENTATION = 0
+endglobals
+
+public struct point 
+  private integer px = DEFAULT_ORIENTATION
+  private integer py = DEFAULT_ORIENTATION
+  private integer pz = DEFAULT_ORIENTATION
+  
+
+//! textmacro XYZ takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro XYZ("x", "x", "px")
+//! runtextmacro XYZ("y", "y", "py")
+//! runtextmacro XYZ("z", "z", "pz")
+  
+  public method operator loc takes nothing returns location
+    return Location(this.px, this.py)
+  endmethod
+
+  public static method create takes integer x, integer y, integer z returns thistype
+    local thistype p = thistype.allocate()
+    
+    set p.x = x
+    set p.y = y
+    set p.z = z
+    
+    return p
+  endmethod      
+      
+endstruct
+
+private function init takes nothing returns nothing
+  static if LIBRARY_zcDebug then
+    local zcPoint_point p = zcPoint_point.create(1, 2, 3)
+    local location lp = p.loc
+    
+    call zcDebug_output.msg("X : " + R2S(GetLocationX(lp)))
+    call zcDebug_output.msg("Y : " + R2S(GetLocationY(lp)))
+    call zcDebug_output.msg("Z : " + R2S(GetLocationZ(lp)))
+    
+    
+    call SetCameraQuickPosition(GetLocationX(lp), GetLocationY(lp))
+    call RemoveLocation(lp)
+    call p.destroy()
+  endif
+endfunction
+
+endlibrary
+
+

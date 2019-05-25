@@ -1,0 +1,848 @@
+
+/*
+zcConsole.0.1.vj 2018-5-9 19:23:58
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+zcTable
+zcOutput
+zcColor
+
+
+lib optional
+zcDebug.0.4.vj 2018-5-9 20:13:21
+
+*/
+
+/*
+test
+*/
+
+/*
+全局控制台 系统运行平台
+唯一 - 单实例
+
+*/
+
+library zcConsole initializer init requires zcDebug, zcTable, zcOutput
+
+// 初始化 initializer
+globals
+  private boolean Ready = false
+endglobals
+
+// G Module
+globals
+  private constant key MA // [父集 标记] - Main 主要数据
+  private constant key CO // [父集 标记] - Common 通用数据
+endglobals
+
+// MA [父集 标记] - Main 主要数据
+globals
+  // Time
+  private constant key MA_GameTime
+  
+  
+  // Game
+  private constant key GMA_GamePlayers     // 游戏计时器 事件 event
+  
+
+  // Timer
+  private constant key GMA_Timer           // 游戏计时器 事件 event
+  private constant key GMA_TimerTrigger    // 游戏计时器 触发器
+  private constant key GMA_TimerTriggerA   // 游戏计时器 触发器动作
+  private constant key GMA_TimerTime       // 游戏时间 初始 0 秒 real
+  private constant key GMA_TimerTimeout    // 计时器持续 1 秒 real
+  private constant key GMA_TimerPeriodic   // 计时器循环 true
+  
+  // zcOutputs
+  private constant key GMA_Output          // [系统] 消息发送
+  private constant key GMA_Output_Messages // [系统] 消息队列
+  
+
+endglobals
+
+
+// CO [父集 标记] - Common 通用数据
+globals
+  
+  // zcColors
+  private constant key ColorSys // [系统] 消息颜色 金 255 255 0 
+  private constant key ColorKey // [辅助] 消息颜色 绿 0 255 0
+  private constant key ColorNor // [普通] 消息颜色 白 240, 240, 240
+  private constant key ColorRew // [奖励] 消息颜色 青 0 255 127
+  private constant key ColorNoc // [提示] 消息颜色 蓝 0 0 255
+  private constant key ColorWar // [警告] 消息颜色 红 255 0 0
+  private constant key ColorSho // [快捷] 消息颜色 暗金 255 204 0
+  
+  // zcOutputs
+  private constant key OutputSys  // [系统] 屏幕消息
+  private constant key OutputKey  // [辅助] 屏幕消息
+  
+  
+  // zcTMTimers
+  private constant key TMTimerSys   // [系统] 计时器
+  private constant key TMTimerKey   // [辅助] 计时器
+  
+  
+  // zcTMDialogs
+  private constant key TMDialogSys  // [系统] 计时器窗口
+  private constant key TMDialogKey  // [辅助] 计时器窗口
+endglobals
+
+// main 4
+struct m4s
+  private zcTables core = 0 // [数据集] - [根]
+  private boolean m4Ready = false
+  
+  private boolean onFirstAction = true  // 第一次执行 计时
+  
+
+  
+  private function onGTimerAction takes nothing returns nothing
+    local real now = GTMain[GMA].real[GMA_TimerTime] + GTMain[GMA].real[GMA_TimerTimeout]
+    local zcOutputs out = GTMain[GOU].integer[GMA_Output]
+    local zcColors css = GTMain[GCO].integer[GMA_ColorSystem]
+    local zcColors cnr = GTMain[GCO].integer[GMA_ColorNormal]
+    local zcColors cnt = GTMain[GCO].integer[GMA_ColorNotice]
+    local string nows = null
+    
+    set GTMain[GMA].real[GMA_TimerTime] = now
+    set nows = zcUsTimes.r2t4ms(now)
+    if onFirstAction then // 第一次执行 计时
+      call out.show.execute(css.format("[系统] ") +cnt.format(nows) + cnr.format(" 测试 rm35Main"))
+      set onFirstAction = false
+    else
+      //call out.show.execute(css.format("[系统] ") +cnt.format(nows) + cnr.format(" 时间" + R2S(GetRandomReal(0,1))))
+    endif
+    
+    set now = 0
+    set nows = null
+    set out = 0
+    set css = 0
+    set cnr = 0
+    set cnt = 0
+  endfunction
+  
+  
+  private function m4ModuleMA takes nothing returns nothing
+  
+  endfunction
+  private function m4ModuleCO takes nothing returns nothing
+    // zcColors
+    set this.core[CO].integer[ColorSys] = zcColors.create(255, 255, 0 )
+    set this.core[CO].integer[ColorNor] = zcColors.create(240, 240, 240 )
+    set this.core[CO].integer[ColorRew] = zcColors.create(0, 255, 127 )
+    set this.core[CO].integer[ColorKey] = zcColors.create(0, 255, 0 )
+    set this.core[CO].integer[ColorNoc] = zcColors.create(0, 0, 255 )
+    set this.core[CO].integer[ColorWar] = zcColors.create(255, 0, 0 )
+    set this.core[CO].integer[ColorSho] = zcColors.create(255, 204, 0 )
+    
+    // zcOutputs
+    set this.core[CO].integer[OutputSys] = zcOutputs.create("")
+    set this.core[CO].integer[OutputNor] = zcOutputs.create("")
+    
+  endfunction
+  private method m4Module takes nothing returns nothing
+    set this.core[MA] = zcTables.create()
+    set this.core[CO] = zcTables.create()
+    
+    
+    call this.m4ModuleMA()
+    debug zcDebugs.log("m4 module MA ready..")
+    call this.m4ModuleCO()
+    debug zcDebugs.log("m4 module CO ready..")
+  endfunction
+  
+  private method m4Open takes nothing returns nothing
+    if this.m4Ready or this.core != 0 then
+      return
+    endif
+    set this.core = zcTables.create()
+    debug zcDebugs.log("m4 core ready..")
+    
+    call this.m4Module()
+    debug zcDebugs.log("m4 module ready..")
+    
+    set this.m4Ready = true
+    debug zcDebugs.log("m4 ready..")
+    
+    // GMA Timer
+    set core[GMA].real[GMA_TimerTime] = 0   // 游戏时间
+    set core[GMA].real[GMA_TimerTimeout] = 1
+    set core[GMA].boolean[GMA_TimerPeriodic] = true
+    set core[GMA].trigger[GMA_TimerTrigger] = CreateTrigger()
+    // 每秒 一次
+    set core[GMA].event[GMA_Timer] = TriggerRegisterTimerEvent(core[GMA].trigger[GMA_TimerTrigger],  core[GMA].real[GMA_TimerTimeout], core[GMA].boolean[GMA_TimerPeriodic])
+    set core[GMA].triggeraction[GMA_TimerTriggerA] = TriggerAddAction(core[GMA].trigger[GMA_TimerTrigger], function onGTimerAction)
+  endfunction
+
+  
+  static method create takes nothing returns zcTables
+    if not this.m4Ready or this.core == 0 then
+      debug zcDebugs.log("m4 core init..")
+      call this.m4Open.evaluate()
+    endif
+    return this.core
+  endfunction
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initializer
+  if Ready then
+    return
+  else
+    set Ready = true
+  endif
+  
+  call FogEnable(false)       // 开图
+  call FogMaskEnable(false)   // 开视野
+
+endfunction
+
+
+endlibrary
+
+library rm35Main initializer init requires zcTable, zcOutput, zcColor, zcPlayer
+
+// G globals
+globals
+  private constant integer RM35NULL = 0   // 占用整数 0
+  private boolean initialized = false     // 初始化标记
+  private constant key GMA              // [父级 标记] - 主要 Main 入口
+  private constant key GTI              // [父级 标记] - 主要 Timer 计时器 
+  private constant key GCO              // [父级 标记] - 主要 Color 颜色管理器
+  private constant key GOU              // [父级 标记] - 主要 Output 消息发送
+  private constant key GPL              // [父级 标记] - 主要 Plan | scheme  Task
+endglobals
+
+// GMA [父级 标记] - 主要 Main 入口
+globals
+  // Game
+  private constant key GMA_GamePlayers     // 游戏计时器 事件 event
+  
+
+  // Timer
+  private constant key GMA_Timer           // 游戏计时器 事件 event
+  private constant key GMA_TimerTrigger    // 游戏计时器 触发器
+  private constant key GMA_TimerTriggerA   // 游戏计时器 触发器动作
+  private constant key GMA_TimerTime       // 游戏时间 初始 0 秒 real
+  private constant key GMA_TimerTimeout    // 计时器持续 1 秒 real
+  private constant key GMA_TimerPeriodic   // 计时器循环 true
+  
+  // zcOutputs
+  private constant key GMA_Output          // [系统] 消息发送
+  private constant key GMA_Output_Messages // [系统] 消息队列
+  
+  // zcColors
+  private constant key GMA_ColorSystem     // [系统] 消息颜色 金 255 255 0 
+  private constant key GMA_ColorNormal     // [普通] 消息颜色 白 0 0 0
+  private constant key GMA_ColorReward     // [奖励] 消息颜色 青 0 255 127
+  private constant key GMA_ColorKey        // [关键] 消息颜色 绿 0 255 0
+  private constant key GMA_ColorNotice     // [提示] 消息颜色 蓝 0 0 255
+  private constant key GMA_ColorWarning    // [警告] 消息颜色 红 255 0 0
+  private constant key GMA_ColorShortcut   // [快捷] 消息颜色 暗金 255 204 0
+endglobals
+
+// GPL [父级 标记] - 主要 Plan | scheme  Task
+globals
+  private constant key GPL_Task_ID         // 任务 id integer
+  private constant key GPL_Task_Status     // 任务 状态 true 开启 false 关闭
+  private constant key GPL_Next            // 下一个执行的任务
+  // zcOutputs
+  private constant key GPL_Output          // [系统] 消息发送
+endglobals
+
+
+  // 初始化
+  scope m4Init
+    globals
+      private zcTables GTMain = 0            // [全局缓存] - [父级 标记]
+      private boolean m4Inited = false       // 初始化标记
+      private boolean onFirstAction = true   // 第一次执行 计时
+    endglobals
+    
+    public keyword onM4Init    // 标记 m4Init initializer 
+    
+    public function getGTM takes nothing returns zcTables
+      if not m4Inited or GTMain == 0 then
+        call onM4Init.evaluate()
+      endif
+      return GTMain
+    endfunction
+    
+    private function onGTimerAction takes nothing returns nothing
+      local real now = GTMain[GMA].real[GMA_TimerTime] + GTMain[GMA].real[GMA_TimerTimeout]
+      local zcOutputs out = GTMain[GOU].integer[GMA_Output]
+      local zcColors css = GTMain[GCO].integer[GMA_ColorSystem]
+      local zcColors cnr = GTMain[GCO].integer[GMA_ColorNormal]
+      local zcColors cnt = GTMain[GCO].integer[GMA_ColorNotice]
+      local string nows = null
+      
+      set GTMain[GMA].real[GMA_TimerTime] = now
+      set nows = zcUsTimes.r2t4ms(now)
+      if onFirstAction then // 第一次执行 计时
+        call out.show.execute(css.format("[系统] ") +cnt.format(nows) + cnr.format(" 测试 rm35Main"))
+        set onFirstAction = false
+      else
+        //call out.show.execute(css.format("[系统] ") +cnt.format(nows) + cnr.format(" 时间" + R2S(GetRandomReal(0,1))))
+      endif
+      
+      set now = 0
+      set nows = null
+      set out = 0
+      set css = 0
+      set cnr = 0
+      set cnt = 0
+    endfunction
+    
+    public function onM4Init takes nothing returns nothing
+
+      // GMA Timer
+      set GTMain[GMA].real[GMA_TimerTime] = 0   // 游戏时间
+      set GTMain[GMA].real[GMA_TimerTimeout] = 1
+      set GTMain[GMA].boolean[GMA_TimerPeriodic] = true
+      set GTMain[GMA].trigger[GMA_TimerTrigger] = CreateTrigger()
+      // 每秒 一次
+      set GTMain[GMA].event[GMA_Timer] = TriggerRegisterTimerEvent(GTMain[GMA].trigger[GMA_TimerTrigger],  GTMain[GMA].real[GMA_TimerTimeout], GTMain[GMA].boolean[GMA_TimerPeriodic])
+      set GTMain[GMA].triggeraction[GMA_TimerTriggerA] = TriggerAddAction(GTMain[GMA].trigger[GMA_TimerTrigger], function onGTimerAction)
+    endfunction
+
+  endscope
+
+  // 任务
+  scope m4Plan
+    globals
+      private constant integer m4PlanSize = 14          // 计划任务 数目
+      private integer array m4PlanList[m4PlanSize]   // 计划任务 索引存放
+      private integer m4PlanNow = 0                     // 当前计划任务
+      
+      private boolean m4Planed = false                  // 初始化标记
+      
+      private string m4planMessage = "有些东西，朝你们来了..."
+    endglobals
+    
+    public keyword onM4PlanInit    // 标记 m4Init initializer 
+  
+    public struct m4plans
+      private real time = 0        // 任务时间
+      private string info = ""     // 消息
+      private integer unitaid      // 单位 a
+      private integer unitbid      // 单位 b
+      
+      public static method create takes real time, string info, integer unita, integer unitb returns thistype
+        local thistype p = thistype.allocate()
+        
+        set p.time = time
+        set p.info = info
+        set p.unitaid = unita
+        set p.unitbid = unitb
+        
+        return p
+      endmethod
+    endstruct
+    
+    private function m4ptestIn  takes nothing returns nothing
+      local zcTables GTM = rm35Main_m4Init_getGTM()
+      local zcOutputs out = GTM[GOU].integer[GPL_Output]
+      local unit a = GTM[GPL].unit[155151]
+      local unit c = GTM[GPL].unit[155150]
+      local item hcun = GTM[GPL].item[155149]
+      local boolean umap = false
+      local boolean first = GTM[GPL].boolean[155148]
+      local integer uid = 0
+      local string states = ""
+      
+      // call UnitIgnoreAlarm(a, false)
+      //仿lol镜头系统 就一行我会乱说?  你他喵是来高效的吗 根本没变化
+      //call SetCameraFieldForPlayer( GetLocalPlayer(), CAMERA_FIELD_ANGLE_OF_ATTACK, bj_CAMERA_DEFAULT_AOA, 0 )
+      
+      if first then
+        set GTM[GPL].boolean[155148] = false
+      else
+        set uid = GetRandomInt(0, 15)
+      endif
+      //call out.show.execute(css.format("[系统] ") +cnt.format(nows) + cnr.format(" 时间" + R2S(GetRandomReal(0,1))))
+      //set states = I2S(GetPlayerState(Player(uid) , zcPUS.gr))
+      //out.show("游戏结果 : " + states)
+      
+      call out.show("玩家 : " + I2S(uid) + " 游戏结果 : " + I2S(GetPlayerState(Player(uid) , zcPUS.gr)))
+      call out.show("金币数 : " + I2S(GetPlayerState(Player(uid) , zcPUS.gold)) + " 木材数 : " + I2S(GetPlayerState(Player(uid) , zcPUS.lumber)))
+      call out.show("使用英雄 : " + I2S(GetPlayerState(Player(uid) , zcPUS.hero)) + " 食物容量 : " + I2S(GetPlayerState(Player(uid) , zcPUS.food)))
+      call out.show("食物使用 : " + I2S(GetPlayerState(Player(uid) , zcPUS.uf)) + " 食物最大容量 : " + I2S(GetPlayerState(Player(uid) , zcPUS.mf)))
+      call out.show("给予奖励 : " + I2S(GetPlayerState(Player(uid) , zcPUS.bounty)))
+      call out.show("联盟胜利 : " + I2S(GetPlayerState(Player(uid) , zcPUS.av)))
+      call out.show("放置 : " + I2S(GetPlayerState(Player(uid) , zcPUS.placed)))
+      call out.show("默认为观察者 : " + I2S(GetPlayerState(Player(uid) , zcPUS.oob)))
+      call out.show("观察者 : " + I2S(GetPlayerState(Player(uid) , zcPUS.ob)))
+      call out.show("不可跟随 : " + I2S(GetPlayerState(Player(uid) , zcPUS.unfollow)))
+      call out.show("金币维护率 : " + I2S(GetPlayerState(Player(uid) , zcPUS.rg)))
+      call out.show("木材维护率 : " + I2S(GetPlayerState(Player(uid) , zcPUS.rl)))
+      call out.show("已收集的金币 : " + I2S(GetPlayerState(Player(uid) , zcPUS.gg)))
+      call out.show("已收集的木材 : " + I2S(GetPlayerState(Player(uid) , zcPUS.gl)))
+      call out.show("野怪不睡觉 : " + I2S(GetPlayerState(Player(uid) , zcPUS.nosleep)))
+
+      
+      // 技能 永久性 ?
+      // set umap = UnitMakeAbilityPermanent(a, true, 'AHca')// takes unit whichUnit, boolean permanent, integer abilityId returns boolean
+      // set umap = UnitMakeAbilityPermanent(a, true, 'Apo2')// takes unit whichUnit, boolean permanent, integer abilityId returns boolean
+      //call UnitRemoveItem(c, hcun)
+      // if umap then
+      //   call out.show("UnitMakeAbilityPermanent true")
+      // else
+      //   call out.show("UnitMakeAbilityPermanent false")
+      // endif
+      
+      // call SetHeroLevel(c, 7, false)
+      // 
+      // call out.show(R2S(GetUnitX(a)))
+      // call UnitAddIndicator(a, 255, 0, 0, 255)
+      // call TriggerSleepAction(1)
+      // call UnitAddIndicator(a, 0, 255, 0, 255)
+      // call TriggerSleepAction(2)
+      // call UnitAddIndicator(a, 0, 0, 255, 255)
+      
+      //if UnitIgnoreAlarmToggled(a) then
+      //  call out.show("UnitIgnoreAlarmToggled true")
+      //else
+      //  call out.show("UnitIgnoreAlarmToggled false")
+      //endif
+      //call UnitAddIndicator(a, bj_TRANSMISSION_IND_RED, bj_TRANSMISSION_IND_BLUE, bj_TRANSMISSION_IND_GREEN, bj_TRANSMISSION_IND_ALPHA) 
+      set a = null
+      set c = null
+      set hcun = null
+      set states = null
+      set GTM = 0
+      set out = 0
+      set umap = false
+    endfunction
+    
+    public function onM4PlanInit takes nothing returns nothing
+      local zcTables GTM = rm35Main_m4Init_getGTM()
+      local zcOutputs out = GTM[GOU].integer[GPL_Output]
+      local zcColors cnt = GTM[GCO].integer[GMA_ColorNotice]
+      local unit a
+      local unit b
+      local unit c
+      local item hcun
+      local m4plans m4p = 0
+      local trigger t = CreateTrigger()
+      //set m4p = m4plans.create()
+      
+      set m4PlanNow = 0
+      
+      set a = CreateUnit(GetLocalPlayer(), 'ZC01', 0, 0, 0)
+      set c = CreateUnit(GetLocalPlayer(), 'Hpal', 0, 0, 0) // 圣骑士
+      set b = CreateUnit(Player(4), 'ZC01', 0, 0, 0)
+      
+      call UnitSetUsesAltIcon(a, true)
+      call UnitSetUsesAltIcon(b, false)
+      
+      //call UnitAddAbility(a, 'AHca')
+      call UnitAddAbility(a, 'ZCS0')
+      // 给英雄 增加 10个技能点
+      
+      
+      call SetHeroLevel(c, 2, true)
+      
+      if UnitModifySkillPoints(c, 15) then
+        call out.show("UnitModifySkillPoints true")
+      else
+        call out.show("UnitModifySkillPoints false")
+      endif
+      set hcun = CreateItem('hcun', GetUnitX(c), GetUnitY(c))
+      call UnitAddItem(c, hcun)
+      //call UnitAddAbility(a, 'ZCS1')
+      call SetUnitState(a, UNIT_STATE_MAX_MANA, 2000)
+      call SetUnitState(a, UNIT_STATE_MAX_LIFE, 2000)
+      call SetUnitState(a, UNIT_STATE_MANA, 2000)
+      call SetUnitState(a, UNIT_STATE_LIFE, 2000)
+      call SetUnitState(b, UNIT_STATE_MAX_MANA, 2000)
+      call SetUnitState(b, UNIT_STATE_MAX_LIFE, 2000)
+      call SetUnitState(b, UNIT_STATE_MANA, 2000)
+      call SetUnitState(b, UNIT_STATE_LIFE, 2000)
+      
+      
+      
+      
+      set GTM[GPL].integer[GPL_Next] = m4PlanNow
+      set GTM[GPL].item[155149] = hcun
+      set GTM[GPL].unit[155150] = c
+      set GTM[GPL].unit[155151] = a
+      set GTM[GPL].unit[155152] = b
+      set GTM[GPL].boolean[155148] = true // 测试 玩家状态 true 为玩家0状态 false 为随机玩家状态
+      
+      call out.show(cnt.format(R2S(GetUnitX(a)) + R2S(GetUnitY(a))))
+      //call SetUnitFog(100,100,100,100,100)
+      
+      
+      call TriggerRegisterPlayerChatEvent(t, GetLocalPlayer(), "-i", true)
+      call TriggerAddAction(t, function m4ptestIn)
+      
+
+      set a = null
+      set b = null
+      set c = null
+      set hcun = null
+      set GTM = 0
+      set out = 0
+      set cnt = 0
+      set m4p = 0
+    endfunction
+  endscope
+  
+private function init takes nothing returns nothing
+  // Test
+  if initialized then
+    return
+  endif
+  set initialized = true
+
+  
+  // onM4Init
+  call m4Init_onM4Init()
+
+  
+  // onM4PlanInit
+  call m4Plan_onM4PlanInit()
+endfunction
+
+
+
+endlibrary
+
+
+library zcTaskMonitor initializer init
+
+// 初始化 initializer
+globals
+  private boolean Ready = false
+  
+  // 最大任务数
+  private constant integer MAX = 100
+endglobals
+
+// 指令 instruction
+globals
+  // 入口指令 Main Instruction
+  private constant string MI = "t"
+  // 操作指令 Operate Instruction
+  private constant string OI_OFF = "off"
+  private constant string OI_ON = "on"
+  private constant string ENTRY = "-"
+  private constant string TEST = "c"
+  private constant string ORDER = "t"
+endglobals
+
+// 缓存 cache
+globals
+  // run 运行中的任务
+  // wait 等待中的任务
+  // off 关闭中的任务
+  // destroy 销毁任务
+  
+   
+  
+  private real GameTime = 0         // 游戏时间
+  
+  private zcOutputs out = 0             // 信息显示
+  private zcChats chat = 0              // 聊天检测
+  
+  
+  
+  private integer array tsw[MAX]       // task wait 任务 缓存
+  private integer array tsr[MAX]       // task run  任务 缓存
+  private integer array tso[MAX]       // task off  任务 缓存
+  private integer tswc = 0             // task wait 任务 缓存 数量 - count
+  private integer tsrc = 0             // task run  任务 缓存 数量 - count
+  private integer tsoc = 0             // task off  任务 缓存 数量 - count
+  private integer tswv = -1            // task wait 任务 缓存 游标 - vernier [-1 空数组]
+  private integer tsrv = -1            // task run  任务 缓存 游标 - vernier [-1 空数组]
+  private integer tsov = -1            // task off  任务 缓存 游标 - vernier [-1 空数组]
+  
+  
+  
+  private group g = CreateGroup()
+  private integer c = 0
+endglobals
+
+// latest
+private function latestTSW takes nothing returns nothing
+  local integer n = 0
+  set tswv = 0
+  loop
+    if n != tswv and zcTasks(tsw[n]).start < zcTasks(tsw[tswv]).start then
+      set tswv = n
+    endif
+    set n  = n + 1
+    exitwhen n >= tswc
+  endloop
+  
+  set n = 0
+endfunction
+private function latestTSR takes nothing returns nothing
+  local integer n = 0
+  set tsrv = 0
+  loop
+    if n != tsrv and zcTasks(tsr[n]).onTime(zcTasks(tsr[tsrv]).onTimed()) then
+      set tsrv = n
+    endif
+    set n  = n + 1
+    exitwhen n >= tsrc
+  endloop
+  set n = 0
+endfunction
+
+private function onTask takes zcTasks at returns nothing
+    set at.time = GameTime
+    call at.on()
+    call out.show(at.message + at.info())
+    call at.onWork(g, c)
+endfunction
+
+// increment
+private function incTSR takes zcTasks at returns nothing
+  set tsr[tsrc] = at
+  if tsrv == -1 then
+    set tsrv = 0
+  elseif not zcTasks(tsr[tsrv]).onTime(at.time + at.timeout) then
+    set tsrv = tsrc
+  endif
+  set tsrc = tsrc + 1
+endfunction
+private function incTSO takes zcTasks at returns nothing
+  set tso[tsoc] = at
+  if tsov == -1 then
+    set tsov = 0
+  endif
+  set tsoc = tsoc + 1
+endfunction
+
+// decrease
+private function decTSW takes nothing returns nothing
+  set tswc = tswc - 1
+  if tswv != tswc then
+    set tsw[tswv] = tsw[tswc]
+  endif
+  if tswc  < 1 then
+    set tswv = -1
+  else
+    call latestTSW()
+  endif
+  set tsw[tswc] = 0
+endfunction
+private function decTSR takes nothing returns nothing
+  set tsrc = tsrc - 1
+  if tsrv != tsrc then
+    set tsr[tsrv] = tsr[tsrc]
+  endif
+  if tsrc  < 1 then
+    set tsrv = -1
+  else
+    call latestTSR()
+  endif
+  set tsr[tsrc] = 0
+endfunction
+
+
+private function monitor takes nothing returns nothing
+  local zcTasks ttp
+  call out.show("当前时间:" + R2S(GameTime) + " tswc:" + R2S(tswc) + " tsrc:" + R2S(tsrc) + " tsoc:" + R2S(tsoc) + " unit" + I2S(c))
+  
+  if tsrc < 1 then
+    set tsrv = -1
+  else
+    set ttp = tsr[tsrv]
+    if ttp.isOn() then
+      if ttp.onTime(GameTime) then
+        call onTask(ttp)
+        call latestTSR()
+      endif
+    else
+      call decTSR()
+      call incTSO(ttp)
+      call latestTSR()
+    endif
+  endif
+    
+  
+  if tswc < 1 then
+    set tswv = -1
+    return
+  endif
+  
+  if tswv == -1 then
+    call latestTSW()
+  endif
+  
+  set ttp = tsw[tswv]
+  if ttp.runnable(GameTime) then
+    call onTask(ttp)
+    call decTSW()
+    if ttp.isOn() then
+      call incTSR(ttp)
+    else
+      call incTSO(ttp)
+    endif
+  endif
+  set ttp = 0
+endfunction
+
+private function timerAction takes nothing returns nothing
+  set GameTime = GameTime + 1
+  call monitor()
+endfunction
+
+private function onTimer takes nothing returns nothing
+  local real timeout = 1
+  local boolean periodic = true
+  local zcTriggers zct = zcTriggers.create()
+    
+  call TriggerRegisterTimerEvent(zct.trg, timeout, periodic)
+  call TriggerAddAction(zct.trg, function timerAction )
+  
+
+endfunction
+
+private function fillTSW takes nothing returns nothing
+  // 初始化 任务
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+  set tsw[tswc] = zcTasks.create(tswc, GetRandomReal(0, 1) , true, 0. , 5. , "刷怪了!", 'hfoo', 2, zcPoints.create(0, 0, 0), Player(tswc))
+  set tswc = tswc + 1
+endfunction
+
+private function chatAction takes nothing returns nothing
+  local string t = GetEventPlayerChatString()
+  local string mt = GetEventPlayerChatStringMatched()
+  local integer length = StringLength(t)
+  local integer order
+  
+  
+  local string entry = SubString(t, 1, 2)
+  local string space = SubString(t, 2, 3)
+  
+  call out.show("信息：" + t + " 长度：" + I2S(length))
+
+  
+  if length > 3 and space == " " then
+    if entry == TEST  then
+      call out.show("有效信息：" + SubString(t, 3, 10))
+    elseif entry == "o" then
+      if length == 5 and SubString(t, 3, 5) == "on" then
+        call chat.on()
+      elseif length == 6 and SubString(t, 3, 6) == "off" then
+        call chat.off()
+      else
+        call out.show("错误信息：" + t + "指令系统关闭中...")
+        call chat.destroy()
+      endif
+    elseif entry == ORDER then
+      if length == 4 then
+        set order = S2I(SubString(t, 3, 4))
+        call out.show("order : " + I2S(order))
+      elseif length == 5 then
+        set order = S2I(SubString(t, 3, 5))
+        call out.show("order : " + I2S(order))
+      else
+        call out.show("错误信息：" + t + " .. 跳过 ...")
+      endif
+    endif
+  endif
+  
+  
+  //call out.show("GetEventPlayerChatString " + t)
+  //call out.show("GetEventPlayerChatStringMatched " + mt)
+  //call out.show("StringCase upper:true" + StringCase(t, true))
+  //call out.show("StringCase upper:false " + StringCase(t, false))
+  //call out.show("GetLocalizedString " + GetLocalizedString(t))
+  //call out.show("StringLength " + I2S(StringLength(t)))
+  //call out.show("SubString 3 - 10 " + SubString(t, 3, 10))
+  //call out.show("SubString 0 - 2" + SubString(t, 0, 2))
+  //call out.show("StringHash " + I2S(StringHash(t)))
+endfunction
+
+// 输入指令检测
+// 指令标识 -
+private function onChat takes nothing returns nothing
+  local player p = Player(0)
+  set chat = zcChats.create(zcTriggers.create(), p)
+  set chat.exact = false
+  
+  call chat.run(ENTRY, function chatAction)
+  
+  if chat.exact then
+    call out.show("精确匹配：ON")
+  else
+    call out.show("精确匹配：OFF")
+  endif
+  
+
+  call out.show("输入： -c info")
+  call out.show("开启触发： -o on")
+  call out.show("关闭触发： -o off")
+  
+  set p = null
+endfunction
+
+
+
+private function init takes nothing returns nothing
+  // Test
+  if Ready then
+    return
+  else
+    set Ready = true
+  endif
+  call FogEnable(false)
+  call FogMaskEnable(false)
+  
+  // test lib zcTask
+  call fillTSW()
+  
+  // lib zcOutput
+  set out = zcOutputs.create("")
+  set out.duration = 200
+  
+  // init timer
+  call onTimer()
+  
+  // lib testzcChat
+  call onChat()
+  
+
+  
+
+endfunction
+
+
+
+endlibrary
+
+

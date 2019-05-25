@@ -1,0 +1,108 @@
+/*
+zcColor.0.3.vj 2018-5-3 18:58:31
+
+0. zcUtils 版本 0.2 为 0.3
+1. 将测试部分分离到 test\testZC.vj
+
+*/
+
+/*
+lib
+zcUtils.0.3.2.vj 2018-5-3 18:56:35
+
+*/
+
+/*
+test
+  testZC.vj
+
+*/
+
+/* 原理
+text color format
+|cffrdgnbl[TEXT]|r
+
+|c alpha red green blue TEXT |r
+*/
+
+library zcColor initializer init requires zcUtils
+
+globals
+  constant integer zcCOLOR_MIN = 0
+  constant integer zcCOLOR_MAX = 255
+  
+  //public constant integer COLOR_ALPHA = zcCOLOR_MAX
+  //public constant integer COLOR_TRANSPARENCY = zcCOLOR_MAX // 不透明
+  
+  constant string zcCOLOR_UNKNOWN = "ff"
+  constant string zcCOLOR_PREFIX = "|c"
+  constant string zcCOLOR_POSTFIX = "|r"
+endglobals
+
+struct zcColorUs // color utils 
+  // 转换 整数 为 颜色码 字符串 2位十六进制
+  public static method i2c takes integer num returns string
+    local string cs = ""
+    
+    if (num > zcCOLOR_MAX) then
+      set num = zcCOLOR_MAX
+    elseif (num < zcCOLOR_MIN) then
+      set num = zcCOLOR_MIN
+    endif
+    
+    if (num < zcUs_I2H_LIMIT) then // 补齐2位
+      set cs = zcUsInt.i2h(zcCOLOR_MIN)
+    endif
+    
+    set cs = cs + zcUsInt.i2h(num)
+    return cs
+  endmethod
+endstruct
+
+struct zcColors
+  private integer r = zcCOLOR_MIN
+  private integer g = zcCOLOR_MIN
+  private integer b = zcCOLOR_MIN
+  
+  public method operator value takes nothing returns string
+    return zcColorUs.i2c(this.r) + zcColorUs.i2c(this.g) + zcColorUs.i2c(this.b)
+  endmethod
+  
+  public method format takes string text returns string
+    return zcCOLOR_PREFIX + zcCOLOR_UNKNOWN + this.value + text + zcCOLOR_POSTFIX
+  endmethod
+    
+//! textmacro RGB takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    if ($ARG$ > zcCOLOR_MAX) then
+      set $ARG$ = zcCOLOR_MAX
+    elseif ($ARG$ < zcCOLOR_MIN) then
+      set $ARG$ = zcCOLOR_MIN
+    endif
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro RGB("red", "r", "r")
+//! runtextmacro RGB("green", "g", "g")
+//! runtextmacro RGB("blue", "b", "b")
+
+  public static method create takes integer r, integer g, integer b returns thistype
+    local thistype c = thistype.allocate()
+    
+    set c.red = r
+    set c.green = g
+    set c.blue = b
+    
+    return c
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+endlibrary

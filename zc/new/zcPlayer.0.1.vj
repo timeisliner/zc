@@ -1,0 +1,197 @@
+/* 
+zcPlayer.0.1.vj 2018-5-7 10:10:46
+
+0. 版本
+1. 说明
+
+*/
+
+/*
+lib
+
+
+
+lib optional
+
+
+*/
+
+/*
+test
+  testPlayerState.0.1.vj 2018-5-7 17:45:46
+
+*/
+
+/*
+集合common.j 中较为常用且与player相关的api
+
+playercolor               玩家颜色
+playergameresult          玩家游戏结果
+playerslotstate           玩家游戏状态
+playerstate               玩家状态
+*/
+
+library zcPlayer initializer init
+
+globals
+  public constant integer UserMax = 12    // bj_MAX_PLAYERS
+  public constant integer SlotMax = 16    // bj_MAX_PLAYER_SLOTS
+  
+  public constant integer Aggressive = 12    // PLAYER_NEUTRAL_AGGRESSIVE 中立 侵略性
+  public constant integer Victim = 13    // bj_PLAYER_NEUTRAL_VICTIM 中立 无敌意
+  public constant integer Extra = 14    // bj_PLAYER_NEUTRAL_VICTIM 中立 敌意
+  public constant integer Passive = 15    // PLAYER_NEUTRAL_PASSIVE 中立 被动
+
+  public constant integer array P12[UserMax]
+  
+endglobals
+
+// player event | playerevent | 玩家事件
+struct zcPEs
+
+// 玩家事件
+//! textmacro TM_zcPEs_GET takes PE, CONST
+  public static method operator $PE$ takes nothing returns playerevent
+    return ConvertPlayerEvent($CONST$) // PLAYER_COLOR_AQUA
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcPEs_GET("sl", "11")       // 状态限制 EVENT_PLAYER_STATE_LIMIT
+//! runtextmacro TM_zcPEs_GET("ac", "12")       // 联盟改变 EVENT_PLAYER_ALLIANCE_CHANGED
+//! runtextmacro TM_zcPEs_GET("defeat", "13")   // 失败     EVENT_PLAYER_DEFEAT                    
+//! runtextmacro TM_zcPEs_GET("victory", "14")  // 胜利     EVENT_PLAYER_VICTORY                   
+//! runtextmacro TM_zcPEs_GET("leave", "15")    // 离开游戏 EVENT_PLAYER_LEAVE                     
+//! runtextmacro TM_zcPEs_GET("chat", "16")     // 聊天     EVENT_PLAYER_CHAT                      
+//! runtextmacro TM_zcPEs_GET("ec", "17")       // 结束电影 EVENT_PLAYER_END_CINEMATIC             
+
+endstruct
+
+// player user color | playercolor | 玩家颜色 常量
+struct zcPUColors
+  // 转换 整数 为 playercolor
+  public static method i2pc takes integer index returns playercolor
+    if index >= UserMax then
+      set index = UserMax - 1
+    elseif index < 0 then
+      set index = 0
+    endif
+    return ConvertPlayerColor(index)
+  endmethod
+
+//! textmacro TM_zcPUColors_GET takes COLOR, INDEX
+  public static method operator $COLOR$ takes nothing returns playercolor
+    return ConvertPlayerColor($INDEX$) // PLAYER_COLOR_AQUA
+  endmethod
+//! endtextmacro
+
+ // 红色    PLAYER_COLOR_RED
+ // 蓝色    PLAYER_COLOR_BLUE
+ // 蓝绿色  PLAYER_COLOR_CYAN
+ // 紫色    PLAYER_COLOR_PURPLE
+ // 黄色    PLAYER_COLOR_YELLOW
+ // 橙色    PLAYER_COLOR_ORANGE
+ // 绿色    PLAYER_COLOR_GREEN
+ // 粉色    PLAYER_COLOR_PINK
+ // 亮灰    PLAYER_COLOR_LIGHT_GRAY
+ // 亮蓝    PLAYER_COLOR_LIGHT_BLUE
+ // 浅绿色  PLAYER_COLOR_AQUA
+ // 棕色    PLAYER_COLOR_BROWN
+
+//! runtextmacro TM_zcPUColors_GET("red", "0") 
+//! runtextmacro TM_zcPUColors_GET("blue", "1")
+//! runtextmacro TM_zcPUColors_GET("cyan", "2")
+//! runtextmacro TM_zcPUColors_GET("purple", "3")
+//! runtextmacro TM_zcPUColors_GET("yellow", "4")
+//! runtextmacro TM_zcPUColors_GET("orange", "5")
+//! runtextmacro TM_zcPUColors_GET("green", "6")
+//! runtextmacro TM_zcPUColors_GET("pink", "7")
+//! runtextmacro TM_zcPUColors_GET("lgray", "8")
+//! runtextmacro TM_zcPUColors_GET("lblue", "9")
+//! runtextmacro TM_zcPUColors_GET("aqua", "10")
+//! runtextmacro TM_zcPUColors_GET("brown", "11")
+
+
+endstruct
+
+// player game result | playergameresult | 玩家游戏结果
+struct zcPUGR
+//! textmacro TM_zcPUGR_GET takes RESULT, INDEX
+  public static method operator $RESULT$ takes nothing returns playergameresult
+    return ConvertPlayerGameResult($INDEX$) // PLAYER_COLOR_AQUA
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcPUGR_GET("victory", "0") // 胜利    PLAYER_GAME_RESULT_VICTORY
+//! runtextmacro TM_zcPUGR_GET("defeat", "1") // 失败     PLAYER_GAME_RESULT_DEFEAT
+//! runtextmacro TM_zcPUGR_GET("tie", "2") // 平局        PLAYER_GAME_RESULT_TIE
+//! runtextmacro TM_zcPUGR_GET("neutral", "3") // 不确定  PLAYER_GAME_RESULT_NEUTRAL
+endstruct
+
+// player slot state | playerslotstate | 玩家游戏状态
+struct zcPUSS
+//! textmacro TM_zcPUSS_GET takes RESULT, INDEX
+  public static method operator $RESULT$ takes nothing returns playerslotstate
+    return ConvertPlayerSlotState($INDEX$) // PLAYER_COLOR_AQUA
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcPUSS_GET("empty", "0") // 空的        PLAYER_SLOT_STATE_EMPTY
+//! runtextmacro TM_zcPUSS_GET("playing", "1") // 游戏中    PLAYER_SLOT_STATE_PLAYING
+//! runtextmacro TM_zcPUSS_GET("left", "2") // 离开游戏     PLAYER_SLOT_STATE_LEFT
+endstruct
+
+// player state | playerstate | 玩家状态
+struct zcPUS
+//! textmacro TM_zcPUS_GET takes RESULT, INDEX
+  public static method operator $RESULT$ takes nothing returns playerstate
+    return ConvertPlayerState($INDEX$) // PLAYER_COLOR_AQUA
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcPUS_GET("gr", "0") // 游戏结果            PLAYER_STATE_GAME_RESULT
+//! runtextmacro TM_zcPUS_GET("gold", "1") // 金币数            PLAYER_STATE_RESOURCE_GOLD
+//! runtextmacro TM_zcPUS_GET("lumber", "2") // 木材数          PLAYER_STATE_RESOURCE_LUMBER
+//! runtextmacro TM_zcPUS_GET("hero", "3") // 使用英雄          PLAYER_STATE_RESOURCE_HERO_TOKENS
+//! runtextmacro TM_zcPUS_GET("food", "4") // 食物容量          PLAYER_STATE_RESOURCE_FOOD_CAP
+//! runtextmacro TM_zcPUS_GET("uf", "5") // 食物使用            PLAYER_STATE_RESOURCE_FOOD_USED
+//! runtextmacro TM_zcPUS_GET("mf", "6") // 食物最大容量        PLAYER_STATE_FOOD_CAP_CEILING
+//! runtextmacro TM_zcPUS_GET("bounty", "7") // 给予奖励        PLAYER_STATE_GIVES_BOUNTY
+//! runtextmacro TM_zcPUS_GET("av", "8") // 联盟胜利            PLAYER_STATE_ALLIED_VICTORY
+//! runtextmacro TM_zcPUS_GET("placed", "9") // 放置            PLAYER_STATE_PLACED
+//! runtextmacro TM_zcPUS_GET("oob", "10") // 默认为观察者      PLAYER_STATE_OBSERVER_ON_DEATH
+//! runtextmacro TM_zcPUS_GET("ob", "11") // 观察者             PLAYER_STATE_OBSERVER
+//! runtextmacro TM_zcPUS_GET("unfollow", "12") // 不可跟随     PLAYER_STATE_UNFOLLOWABLE
+//! runtextmacro TM_zcPUS_GET("rg", "13") // 金币维护率         PLAYER_STATE_GOLD_UPKEEP_RATE
+//! runtextmacro TM_zcPUS_GET("rl", "14") // 木材维护率         PLAYER_STATE_LUMBER_UPKEEP_RATE
+//! runtextmacro TM_zcPUS_GET("gg", "15") // 已收集的金币       PLAYER_STATE_GOLD_GATHERED
+//! runtextmacro TM_zcPUS_GET("gl", "16") // 已收集的木材       PLAYER_STATE_LUMBER_GATHERED
+//! runtextmacro TM_zcPUS_GET("nosleep", "25") // 野怪不睡觉    PLAYER_STATE_NO_CREEP_SLEEP
+endstruct
+
+struct zcPUEArrow
+
+endstruct
+
+struct zcPlayers
+  private integer team
+  private integer id
+  
+  
+  public method self takes nothing returns player
+    return Player(id)
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+
+  
+  
+  
+endfunction
+
+
+endlibrary
+

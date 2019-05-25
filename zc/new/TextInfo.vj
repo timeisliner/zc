@@ -1,0 +1,99 @@
+library zcTextInfo initializer init
+
+globals
+  private hashtable ht = InitHashtable()
+  public key abc
+  
+  
+  
+  private key sizeK
+  private key listK
+endglobals
+
+
+private struct color
+  integer red
+  integer green
+  integer blue
+
+endstruct
+
+
+interface myInterface
+    method myMethod1 takes nothing returns nothing
+    method myMethod2 takes nothing returns nothing
+endinterface
+
+struct myStruct
+    method myMethod1 takes nothing returns nothing
+        call BJDebugMsg("er")
+    endmethod
+endstruct
+
+function test takes nothing returns nothing
+ local myInterface mi = myStruct.create()
+    //outputs:
+    // yes
+    // no
+    if( mi.myMethod1.exists) then
+        call BJDebugMsg("Yes")
+    else
+        call BJDebugMsg("No")
+    endif
+    if( mi.myMethod2.exists) then
+        call BJDebugMsg("Yes")
+    else
+        call BJDebugMsg("No")
+    endif
+
+endfunction
+
+private struct dex extends array
+
+endstruct
+
+struct spellEvent
+  eventid eid 
+  player tp //
+  ability sa // spell ability
+  integer sai //spell ability id
+  unit sau //spell ability unit
+
+endstruct
+
+struct spellEventTarget
+  unit stu //spell target unit
+  item sti //spell target item
+  location stl // spell target location
+  destructable std // spell target destructable
+endstruct
+
+private function action takes nothing returns nothing
+  local spellEventTarget et = spellEventTarget.create()
+  // call DisplayTextToPlayer( GetLocalPlayer(), 0, 0, ( "|cff00FF7F[测试]|r 事件" + GetTriggerEventId() ) )
+    call test()
+
+endfunction
+
+
+function init takes nothing returns nothing
+  local trigger t = CreateTrigger()
+  
+  call TriggerRegisterAnyUnitEventBJ( t, EVENT_PLAYER_UNIT_SPELL_ENDCAST )
+  call TriggerRegisterAnyUnitEventBJ( t, EVENT_PLAYER_UNIT_SPELL_CHANNEL )
+  call TriggerRegisterAnyUnitEventBJ( t, EVENT_PLAYER_UNIT_SPELL_CAST )
+  call TriggerRegisterAnyUnitEventBJ( t, EVENT_PLAYER_UNIT_SPELL_EFFECT )
+  call TriggerRegisterAnyUnitEventBJ( t, EVENT_PLAYER_UNIT_SPELL_ENDCAST )
+  
+  call TriggerAddAction(t, function action)
+  //constant native GetUnitTypeId takes unit whichUnit returns integer
+  //GetTriggerUnit()
+  //native I2S takes integer i returns string
+  //I2S(GetUnitTypeId(GetTriggerUnit()))
+  call DisplayTextToPlayer( GetLocalPlayer(), 0, 0, ( "|cff00FF7F[测试]|r 事件" + I2S(GetUnitTypeId(GetTriggerUnit())) ) )
+
+endfunction
+
+endlibrary
+
+call DisplayTextToPlayer( GetLocalPlayer(), 0, 0, ( "|cff00FF7F[测试]|r 事件" + GetTriggerEventId() ) )

@@ -1,0 +1,92 @@
+/* 
+zcOutput.0.1.vj 2018-5-3 4:27:29
+
+*/
+
+/*
+test
+  testZCOutput.vj
+*/
+
+/*
+lib
+zcPoint.0.3.vj
+
+*/
+
+library zcOutput initializer init requires zcPoint
+
+globals
+  constant real zcOUT_D_DURATION = 15.
+  constant real zcOUT_MAX_DURATION = 7200.
+  
+endglobals
+
+struct zcOutputs
+  private zcPoints loc // 地点
+  private real dur = zcOUT_D_DURATION // 持续时间
+  private string msg = "" // 消息
+  private player ply = GetLocalPlayer() // 玩家
+  
+
+  
+//! textmacro TM_zcOutputs_GET takes ATTR, MBR, TYPE
+  public method operator $ATTR$ takes nothing returns $TYPE$
+    return this.$MBR$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_GET("message", "msg", "string")
+//! runtextmacro TM_zcOutputs_GET("duration", "dur", "real")
+//! runtextmacro TM_zcOutputs_GET("point", "loc", "zcPoints")
+//! runtextmacro TM_zcOutputs_GET("user", "ply", "player")
+
+//! textmacro TM_zcOutputs_SET takes ATTR, ARG, MBR, TYPE
+  public method operator $ATTR$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro TM_zcOutputs_SET("message", "amsg", "msg", "string")
+//! runtextmacro TM_zcOutputs_SET("point", "apoint", "loc", "zcPoints")
+//! runtextmacro TM_zcOutputs_SET("user", "auser", "ply", "player")
+
+  public method setlocation takes integer x, integer y, integer z returns nothing
+    set loc.x = x
+    set loc.y = y
+    set loc.z = z
+  endmethod
+
+  public method operator duration= takes real adur returns nothing
+    if (adur < zcOUT_MAX_DURATION and adur >= 0) then
+      set this.dur = adur
+    endif
+  endmethod
+  
+  public method display takes nothing returns nothing
+    call DisplayTimedTextToPlayer(this.user, I2R(this.point.x), I2R(this.point.y), this.duration, this.message)
+  endmethod
+  
+  
+  public static method create takes string message returns thistype
+    local thistype out = thistype.allocate()
+    set out.point = zcPoints.create(0, 0, 0)
+    set out.message = message
+
+    return out
+  endmethod
+  
+  method onDestroy takes nothing returns nothing
+    if (this.point != 0) then
+        call point.destroy()
+    endif
+  endmethod
+endstruct
+
+private function init takes nothing returns nothing
+
+endfunction
+
+
+endlibrary
+

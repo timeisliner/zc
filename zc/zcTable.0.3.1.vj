@@ -1,0 +1,237 @@
+/*
+zcTable.0.3.1.vj 2018-5-10 12:27:26
+
+1. 代码精简
+
+*/
+
+/*
+test
+
+*/
+
+/*
+see
+  copy from >> F:\app\war3\lib\NewTable 4.1.0.1.vj
+
+*/
+
+library zcTable
+
+globals
+  private integer KeySize = JASS_MAX_ARRAY_SIZE - 2 // 8192 - 2
+  private integer IndexVernier = KeySize // 哈希表 父键 游标
+    // 为什么会是8190?我觉得是因为下面这个key类型变量Cache的问题,作者认为key基本上不需要用到8190个,所以在8190以后是安全的
+  //Configure it if you use more than 8190 "key" variables in your map (this will never happen though).
+  
+  private hashtable HT = InitHashtable() // 哈希表 数据存储
+  
+  private key Cache
+    // 哈希表父键，其子键0的值存储着最后一个被destroy的哈希表父键
+    // 如果其子键0的值为0，则表示没有被destroy的哈希表父键，或者所有被destroy的哈希表父键通过create又分配出去了
+    //    所以，create使IndexVernier增加1作为新的哈希表父键
+  
+endglobals
+
+// 栈
+// stack
+private struct stack
+  static method operator cache takes nothing returns zcTables
+    return Cache
+  endmethod
+endstruct
+
+// N - struct | module name
+// T  - type
+// NF - native function
+//! textmacro TM_zcTable_BIRS takes N, T, NF1, NF2
+private struct $N$s extends array
+  method operator [] takes integer i returns $T$
+    return Load$NF1$(HT, this, i)
+  endmethod
+  method operator []= takes integer i, $T$ v returns nothing
+    call Save$NF1$(HT, this, i, v)
+  endmethod
+  method has takes integer i returns boolean
+    return HaveSaved$NF2$(HT, this, i)
+  endmethod
+  method remove takes integer i returns nothing
+    call RemoveSaved$NF2$(HT, this, i)
+  endmethod
+endstruct
+
+private module $N$m
+  method operator $T$ takes nothing returns $N$s
+    return this
+  endmethod
+endmodule
+//! endtextmacro
+
+
+//! textmacro TM_zcTable_HANDLE takes N, T, NF
+private struct $N$s extends array
+  method operator [] takes integer i returns $T$
+    return Load$NF$Handle(HT, this, i)
+  endmethod
+  method operator []= takes integer i, $T$ v returns nothing
+    call Save$NF$Handle(HT, this, i, v)
+  endmethod
+  method has takes integer i returns boolean
+    return HaveSavedHandle(HT, this, i)
+  endmethod
+  method remove takes integer i returns nothing
+    call RemoveSavedHandle(HT, this, i)
+  endmethod
+endstruct
+
+private module $N$m
+  method operator $T$ takes nothing returns $N$s
+    return this
+  endmethod
+endmodule
+//! endtextmacro
+
+// TM_zcTable_BIRS
+//! runtextmacro TM_zcTable_BIRS("boolean", "boolean", "Boolean", "Boolean")
+//! runtextmacro TM_zcTable_BIRS("integer", "integer", "Integer", "Integer")
+//! runtextmacro TM_zcTable_BIRS("real", "real", "Real", "Real")
+//! runtextmacro TM_zcTable_BIRS("string", "string", "Str", "String")
+
+// TM_zcTable_HANDLE
+//! runtextmacro TM_zcTable_HANDLE("ability", "ability", "Ability")
+//! runtextmacro TM_zcTable_HANDLE("boolexpr", "boolexpr", "BooleanExpr")
+//! runtextmacro TM_zcTable_HANDLE("button", "button", "Button")
+//! runtextmacro TM_zcTable_HANDLE("defeatcondition", "defeatcondition", "DefeatCondition")
+//! runtextmacro TM_zcTable_HANDLE("destructable", "destructable", "Destructable")
+//! runtextmacro TM_zcTable_HANDLE("dialog", "dialog", "Dialog")
+//! runtextmacro TM_zcTable_HANDLE("effect", "effect", "Effect")
+//! runtextmacro TM_zcTable_HANDLE("fogmodifier", "fogmodifier", "FogModifier")
+//! runtextmacro TM_zcTable_HANDLE("fogstate", "fogstate", "FogState")
+//! runtextmacro TM_zcTable_HANDLE("force", "force", "Force")
+//! runtextmacro TM_zcTable_HANDLE("group", "group", "Group")
+//! runtextmacro TM_zcTable_HANDLE("image", "image", "Image")
+//! runtextmacro TM_zcTable_HANDLE("item", "item", "Item")
+//! runtextmacro TM_zcTable_HANDLE("itempool", "itempool", "ItemPool")
+//! runtextmacro TM_zcTable_HANDLE("leaderboard", "leaderboard", "Leaderboard")
+//! runtextmacro TM_zcTable_HANDLE("lightning", "lightning", "Lightning")
+//! runtextmacro TM_zcTable_HANDLE("location", "location", "Location")
+//! runtextmacro TM_zcTable_HANDLE("multiboard", "multiboard", "Multiboard")
+//! runtextmacro TM_zcTable_HANDLE("multiboarditem", "multiboarditem", "MultiboardItem")
+//! runtextmacro TM_zcTable_HANDLE("player", "player", "Player")
+//! runtextmacro TM_zcTable_HANDLE("quest", "quest", "Quest")
+//! runtextmacro TM_zcTable_HANDLE("questitem", "questitem", "QuestItem")
+//! runtextmacro TM_zcTable_HANDLE("rect", "rect", "Rect")
+//! runtextmacro TM_zcTable_HANDLE("region", "region", "Region")
+//! runtextmacro TM_zcTable_HANDLE("sound", "sound", "Sound")
+//! runtextmacro TM_zcTable_HANDLE("texttag", "texttag", "TextTag")
+//! runtextmacro TM_zcTable_HANDLE("timerdialog", "timerdialog", "TimerDialog")
+//! runtextmacro TM_zcTable_HANDLE("timer", "timer", "Timer")
+//! runtextmacro TM_zcTable_HANDLE("trackable", "trackable", "Trackable")
+//! runtextmacro TM_zcTable_HANDLE("triggeraction", "triggeraction", "TriggerAction")
+//! runtextmacro TM_zcTable_HANDLE("triggercondition", "triggercondition", "TriggerCondition")
+//! runtextmacro TM_zcTable_HANDLE("event", "event", "TriggerEvent")
+//! runtextmacro TM_zcTable_HANDLE("trigger", "trigger", "Trigger")
+//! runtextmacro TM_zcTable_HANDLE("ubersplat", "ubersplat", "Ubersplat")
+//! runtextmacro TM_zcTable_HANDLE("unit", "unit", "Unit")
+//! runtextmacro TM_zcTable_HANDLE("unitpool", "unitpool", "UnitPool")
+//! runtextmacro TM_zcTable_HANDLE("widget", "widget", "Widget")
+
+//! runtextmacro TM_zcTable_HANDLE("hashtable", "hashtable", "Hashtable")
+
+struct zcTables extends array
+  
+  implement booleanm
+  implement integerm
+  implement realm
+  implement stringm
+  
+  
+  implement abilitym
+  implement boolexprm
+  implement buttonm
+  implement defeatconditionm
+  implement destructablem
+  implement dialogm
+  implement effectm
+  implement fogmodifierm
+  implement fogstatem
+  implement forcem
+  implement groupm
+  implement imagem
+  implement itemm
+  implement itempoolm
+  implement leaderboardm
+  implement lightningm
+  implement locationm
+  implement multiboardm
+  implement multiboarditemm
+  implement playerm
+  implement questm
+  implement questitemm
+  implement rectm
+  implement regionm
+  implement soundm
+  implement texttagm
+  implement timerdialogm
+  implement timerm
+  implement trackablem
+  implement triggeractionm
+  implement triggerconditionm
+  implement eventm
+  implement triggerm
+  implement ubersplatm
+  implement unitm
+  implement unitpoolm
+  implement widgetm
+  
+  implement hashtablem
+
+  //set this = tb[GetSpellAbilityId()]
+  method operator [] takes integer i returns thistype
+    return LoadInteger(HT, this, i) //return this.integer[i]
+  endmethod
+  
+  //set tb[389034] = 8192
+  method operator []= takes integer i, thistype t returns nothing
+    call SaveInteger(HT, this, i, t) //set this.integer[i] = tb
+  endmethod
+  
+  //set b = tb.has(2493223)
+  method has takes integer i returns boolean
+    return HaveSavedInteger(HT, this, i) //return this.integer.has(i)
+  endmethod
+  //call tb.remove(294080)
+  method remove takes integer i returns nothing
+    call RemoveSavedInteger(HT, this, i) //return this.integer.remove(i)
+  endmethod
+  //Remove all data from a zcTables instance
+  method flush takes nothing returns nothing
+    call FlushChildHashtable(HT, this)
+  endmethod
+  
+  static method create takes nothing returns thistype
+    local thistype tt = stack.cache[0]  // 初始化值 空值 = zcTables(cache)[0]
+    
+    if tt == 0 then
+      set tt = IndexVernier + 1 // IndexVernier = zcTables_MAX_SIZE = 8190 // zcTables index [ > 8190 ]
+      set IndexVernier = tt     // 8191
+    else
+      set stack.cache[0] = stack.cache[tt] // zcTables(cache)[0] = zcTables(cache)[tt] - zcTables(cache)[8191]
+      call stack.cache.remove(tt)
+    endif
+    
+    return tt
+  endmethod
+  
+  // Removes all data from a zcTables instance and recycles its index.
+  // call tb.destroy()
+  method destroy takes nothing returns nothing
+    set stack.cache[this] = stack.cache[0]
+    set stack.cache[0] = this
+    
+    call this.flush()
+  endmethod
+endstruct
+
+endlibrary
+

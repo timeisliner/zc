@@ -1,0 +1,72 @@
+/* 
+testPlayerState.0.1.vj 2018-5-7 17:45:46
+
+
+require
+zcOutput.0.2.vj 2018-5-4 20:49:19
+
+test lib
+zcPlayer.0.1.vj 2018-5-7 10:10:46
+
+
+
+
+
+*/
+
+scope testZCOutput initializer init
+
+globals
+  private boolean tested = false
+  private zcOutputs out = 0
+endglobals
+
+// 显示 玩家状态
+// 输入 -ps pid
+private function showPS takes nothing returns nothing
+  local integer uid = 0
+  local string uids = I2S(uid)
+  local player p = Player(uid)
+  
+  call out.show("玩家 : " + uids + " 游戏结果 : " + I2S(GetPlayerState(p, zcPUS.gr)))
+  call out.show("金币数 : " + I2S(GetPlayerState(p, zcPUS.gold)) + " 木材数 : " + I2S(GetPlayerState(p, zcPUS.lumber)))
+  call out.show("使用英雄 : " + I2S(GetPlayerState(p, zcPUS.hero)) + " 食物容量 : " + I2S(GetPlayerState(p, zcPUS.food)))
+  call out.show("食物使用 : " + I2S(GetPlayerState(p, zcPUS.uf)) + " 食物最大容量 : " + I2S(GetPlayerState(p, zcPUS.mf)))
+  call out.show("给予奖励 : " + I2S(GetPlayerState(p, zcPUS.bounty)) + " 联盟胜利 : " + I2S(GetPlayerState(p, zcPUS.av)))
+  call out.show("放置 : " + I2S(GetPlayerState(p, zcPUS.placed)) + " 默认为观察者 : " + I2S(GetPlayerState(p, zcPUS.oob)))
+  call out.show("观察者 : " + I2S(GetPlayerState(p, zcPUS.ob)) + " 不可跟随 : " + I2S(GetPlayerState(p, zcPUS.unfollow)))
+  call out.show("金币维护率 : " + I2S(GetPlayerState(p, zcPUS.rg)) + " 木材维护率 : " + I2S(GetPlayerState(p, zcPUS.rl)))
+  call out.show("已收集的金币 : " + I2S(GetPlayerState(p, zcPUS.gg)) + " 已收集的木材 : " + I2S(GetPlayerState(p, zcPUS.gl)))
+  call out.show("野怪不睡觉 : " + I2S(GetPlayerState(p , zcPUS.nosleep)))
+  
+  set uid = 0
+  set uids = null
+  set p = null
+endfunction
+
+    
+  // lib zcOutput
+private function zcOutput takes nothing returns nothing
+  static if LIBRARY_zcOutput then
+    local zcOutputs output = zcOutputs.create("zcOutputs test...")
+    call output.display()
+  endif
+endfunction
+
+private function init takes nothing returns nothing
+  // Test
+  if tested then
+    return
+  else
+    set tested = true
+  endif
+  // lib zcOutput
+  set out = zcOutputs.create("")
+  
+  // lib zcPlayer
+  call showPS()
+
+endfunction
+
+
+endscope

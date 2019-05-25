@@ -1,0 +1,133 @@
+/*
+zcColor.0.1.vj 2018-5-1 1:10:06
+
+lib
+zcUtils.0.1.vj
+
+lib optional
+zcDebug.0.1.vj
+
+*/
+
+/*
+text color format
+|cffrdgnbl[TEXT]|r
+
+|c alpha red green blue TEXT |r
+*/
+
+library zcColor initializer init requires zcUtils, optional zcDebug
+
+globals
+  public constant integer COLOR_MIN = 0
+  public constant integer COLOR_MAX = 255
+  
+  //public constant integer COLOR_ALPHA = COLOR_MAX
+  //public constant integer COLOR_TRANSPARENCY = COLOR_MAX // 不透明
+  
+  public constant string COLOR_UNKNOWN = "ff"
+  public constant string COLOR_PREFIX = "|c"
+  public constant string COLOR_POSTFIX = "|r"
+endglobals
+
+public struct cus // color utils 
+  // 转换 整数 为 颜色码 字符串 2位十六进制
+  public static method i2c takes integer num returns string cs
+    local string cs = ""
+    
+    if (num > COLOR_MAX) then
+      set num = COLOR_MAX
+    elseif (num < COLOR_MIN) then
+      set num = COLOR_MIN
+    endif
+    
+    if (num < zcUtils_I_HEX_LIMIT) then // 补齐2位
+      set cs = zcUtils_ius.i2h(COLOR_MIN)
+    endif
+    
+    set cs = cs + zcUtils_ius.i2h(num)
+    return cs
+  endmethod
+endstruct
+
+public struct color
+  private integer r = COLOR_MIN
+  private integer g = COLOR_MIN
+  private integer b = COLOR_MIN
+  
+  public method operator value takes nothing returns string
+    return cus.i2c(this.r) + cus.i2c(this.g) + cus.i2c(this.b)
+  endmethod
+  
+  public method format takes string text returns string
+    return COLOR_PREFIX + COLOR_UNKNOWN + this.value + text + COLOR_POSTFIX
+  endmethod
+    
+//! textmacro RGB takes ATTR, ARG, MBR
+  public method operator $ATTR$ takes nothing returns integer
+    return this.$MBR$
+  endmethod
+  public method operator $ATTR$= takes integer $ARG$ returns nothing
+    if ($ARG$ > COLOR_MAX) then
+      set $ARG$ = COLOR_MAX
+    elseif ($ARG$ < COLOR_MIN) then
+      set $ARG$ = COLOR_MIN
+    endif
+    set this.$MBR$ = $ARG$
+  endmethod
+//! endtextmacro
+
+//! runtextmacro RGB("red", "r", "r")
+//! runtextmacro RGB("green", "g", "g")
+//! runtextmacro RGB("blue", "b", "b")
+
+  public static method create takes integer r, integer g, integer b returns thistype
+    local thistype c = thistype.allocate()
+    
+    set c.red = r
+    set c.green = g
+    set c.blue = b
+    
+    return c
+  endmethod
+endstruct
+
+
+
+private function init takes nothing returns nothing
+static if LIBRARY_zcDebug then
+  local color c = color.create(1,2,3)
+  local color red = color.create(255,0,0)
+  local color green = color.create(0,255,0)
+  local color blue = color.create(0,0,255)
+  local color c1 = color.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  local color c2 = color.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  local color c3 = color.create(GetRandomInt(0, 255),GetRandomInt(0, 255),GetRandomInt(0, 255))
+  
+  set c.red= 22
+  set c.green = 44
+  
+  
+  call zcDebug_output.msg(red.format(red.value))
+  call zcDebug_output.msg(green.format(green.value))
+  call zcDebug_output.msg(blue.format(blue.value))
+  call zcDebug_output.msg(c.format("hazy	微茫的 c") + c.value)
+  call zcDebug_output.msg(c1.format("hazy	微茫的 c1") + c1.value)
+  call zcDebug_output.msg(c2.format("hazy	微茫的 c2") + c2.value)
+  call zcDebug_output.msg(c3.format("hazy	微茫的 c3") + c3.value)
+  
+  call c.destroy()
+  call red.destroy()
+  call green.destroy()
+  call blue.destroy()
+  call c1.destroy()
+  call c2.destroy()
+  call c3.destroy()
+  
+  call zcDebug_output.msg( "|cff" + zcUtils_ius.i2h(176) + zcUtils_ius.i2h(224) + zcUtils_ius.i2h(230) + "|r" )
+  call zcDebug_output.msg( "|c00" + zcUtils_ius.i2h(255) + cus.i2c(0) + cus.i2c(0) + "hazy	微茫的	B0 E0 E6|r" )
+endif
+endfunction
+
+
+endlibrary

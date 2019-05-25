@@ -1,0 +1,99 @@
+/* Zone Center | Zone Code
+zc.0.3.min.vj 2018-5-8 17:51:07
+
+0. 版本
+1. 说明 - 为 DSG 增加文本宏
+
+*/
+
+/*
+lib
+
+lib optional
+
+*/
+
+/*
+test
+
+*/
+
+/*
+整合 common.j 中较为常用且与 [关键字] 相关的 api
+包括提供一些便利的方法，这会加重程序运行负担，也能极大提高编程效率
+*/
+
+library zc initializer init requires libraryA optional libraryB
+
+globals
+
+     
+endglobals
+
+struct zcstructs
+
+// Define Set Get
+//! textmacro TM_zcstructs_DSG takes METHOD, ARG, TYPE, VALUE, MEMBER
+  private $TYPE$ $MEMBER$ = $VALUE$             
+
+  method operator $METHOD$ takes nothing returns $TYPE$
+    return this.$MEMBER$
+  endmethod
+  
+  method operator $METHOD$= takes $TYPE$ $ARG$ returns nothing
+    set this.$MEMBER$ = $ARG$
+  endmethod
+  
+//! endtextmacro
+
+//! runtextmacro TM_zcstructs_DSG("id", "aid", "integer", "0", "i")                          // sg 任务开始时间
+//! runtextmacro TM_zcstructs_DSG("start", "astart", "integer", "0", "s")                    // sg 任务开始时间
+//! runtextmacro TM_zcstructs_DSG("periodic", "aperiodic", "boolean", "false", "prd")        // sg 是否循环
+//! runtextmacro TM_zcstructs_DSG("timeout", "atimeout", "real", "0", "to")                  // sg 刷怪间隔时间
+//! runtextmacro TM_zcstructs_DSG("message", "amessage", "string", "null", "msg")            // sg 消息提示
+//! runtextmacro TM_zcstructs_DSG("monster", "amonster", "integer", "0", "mst")              // sg 刷怪类型 编号
+//! runtextmacro TM_zcstructs_DSG("number", "anumber", "integer", "0", "num")                // sg 刷怪数量
+//! runtextmacro TM_zcstructs_DSG("point", "apoint", "zcPoints", "0", "pt")                  // sg 刷怪地点
+//! runtextmacro TM_zcstructs_DSG("player", "aplayer", "player", "null", "ply")              // sg 怪物所属玩家
+
+
+  // constructor
+  static method create takes integer ai,  integer as, boolean aprd, real ato, string amsg, integer amst, integer anum, zcPoints apt, player aply returns thistype
+    local thistype tt = thistype.allocate()
+    set tt.i = ai
+    set tt.s = as
+    set tt.prd = aprd
+    set tt.to = ato
+    set tt.msg = amsg
+    set tt.mst = amst
+    set tt.num = anum
+    set tt.pt = apt
+    set tt.ply = aply
+    
+    return tt
+  endmethod
+    
+  // destructor
+  method destroy takes nothing returns nothing
+    call this.deallocate()
+  endmethod
+    
+  // on destructor
+  // automatic call
+  private method onDestroy takes nothing returns nothing
+    
+    debug call zcDebugs.output("zcstructs ... destroyed!")
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  // initialize
+  // local libraryA_structA toInit = libraryA_structA.create()
+  // ...
+endfunction
+
+
+endlibrary
+
+

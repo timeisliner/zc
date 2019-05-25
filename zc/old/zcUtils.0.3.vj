@@ -1,0 +1,69 @@
+/*
+zcUtils.0.3.vj 2018-5-3 18:56:35
+
+1. 将测试部分分离到 test\testZC.vj
+
+*/
+
+/*
+test
+  testZC.vj
+*/
+
+
+library zcUtils initializer init
+
+globals
+  constant integer zcUs_I2H_LIMIT = 16
+  
+  private constant string array I2Hs
+endglobals
+
+struct zcUsInt
+  // 转换 整数 为 十六进制 字符串
+  public static method i2h takes integer num returns string
+    local integer curr = 0
+    local integer next = 0
+    
+    local string hexs = ""
+    local boolean end = false
+    
+    loop
+      set next = num / zcUs_I2H_LIMIT
+      if (next > 0) then
+        set curr = num - next * zcUs_I2H_LIMIT
+        set hexs = I2Hs[curr] + hexs
+        set num = next
+      else
+        set hexs = I2Hs[num] + hexs
+        set end = true
+      endif
+      exitwhen end
+    endloop
+    
+    return hexs
+  endmethod
+  
+endstruct
+
+private function init takes nothing returns nothing
+  set I2Hs[0] = "0"
+  set I2Hs[1] = "1"
+  set I2Hs[2] = "2"
+  set I2Hs[3] = "3"
+  set I2Hs[4] = "4"
+  set I2Hs[5] = "5"
+  set I2Hs[6] = "6"
+  set I2Hs[7] = "7"
+  set I2Hs[8] = "8"
+  set I2Hs[9] = "9"
+  set I2Hs[10] = "A"
+  set I2Hs[11] = "B"
+  set I2Hs[12] = "C"
+  set I2Hs[13] = "D"
+  set I2Hs[14] = "E"
+  set I2Hs[15] = "F"
+endfunction
+
+endlibrary
+
